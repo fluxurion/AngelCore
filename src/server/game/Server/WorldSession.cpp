@@ -1455,7 +1455,7 @@ void WorldSession::InitializeSessionCallback(LoginDatabaseQueryHolder const& hol
 #endif
 }
 
-rbac::RBACData* WorldSession::GetRBACData()
+rbac::RBACData* WorldSession::GetRBACData() const
 {
     return _RBACData;
 }
