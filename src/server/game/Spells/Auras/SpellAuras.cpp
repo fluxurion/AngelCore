@@ -41,6 +41,9 @@
 #include "Util.h"
 #include "Vehicle.h"
 #include "World.h"
+#ifdef ANGELSCRIPT_INTEGRATION
+#include "AngelScriptMgr.h"
+#endif
 #include <sstream>
 
 class ChargeDropEvent : public BasicEvent
