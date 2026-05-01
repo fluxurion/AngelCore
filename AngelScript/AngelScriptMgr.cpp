@@ -672,6 +672,24 @@ void AngelScriptMgr::TriggerAuraCalcDamageAndHealing(AuraEffect const* aurEff, U
     }
 }
 
+void AngelScriptMgr::TriggerAuraCalcAmount(AuraEffect const* aurEff, double& amount, bool& canBeRecalculated)
+{
+    if (!aurEff) return;
+    Aura* aur = aurEff->GetBase();
+    if (!aur) return;
+
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(aur->GetId(), SpellHookType::ON_AURA_CALC_AMOUNT))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+        
+        _context->SetArgObject(0, (void*)aurEff); 
+        _context->SetArgAddress(1, &amount);
+        _context->SetArgAddress(2, &canBeRecalculated);
+        _context->Execute();
+    }
+}
+
 void AngelScriptMgr::TriggerSpellCalcDamage(Spell* s, uint8 i, Unit* t, int32& damage, int32& flatMod, float& pctMod)
 {
     if (!s) return;
