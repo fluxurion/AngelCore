@@ -947,6 +947,12 @@ class TC_GAME_API Spell
         void CallScriptCalcCritChanceHandlers(Unit const* victim, float& chance);
         void CallScriptCalcDamageHandlers(SpellEffectInfo const& spellEffectInfo, Unit* victim, int32& damage, int32& flatMod, float& pctMod);
         void CallScriptCalcHealingHandlers(SpellEffectInfo const& spellEffectInfo, Unit* victim, int32& healing, int32& flatMod, float& pctMod);
+#ifdef ANGELSCRIPT_INTEGRATION
+        int32 GetHitDamage() const    { return m_damage;  }
+        void  SetHitDamage(int32 val) { m_damage  = val;  }
+        int32 GetHitHeal()   const    { return m_healing; }
+        void  SetHitHeal(int32 val)   { m_healing = val;  }
+#endif
         template <class Script>
         Script* GetScript() const { return static_cast<Script*>(GetScriptByType(typeid(Script))); }
     protected:

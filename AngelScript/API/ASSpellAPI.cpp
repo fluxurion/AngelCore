@@ -65,11 +65,11 @@ namespace AngelScript
     }
     static uint8 Spell_GetSpellSchool(Spell* s) { return s ? static_cast<uint8>(s->GetSpellInfo()->SchoolMask) : 0; }
 
-    // Hit damage / healing setters (mirrors SpellScript::SetHitDamage / SetHitHeal)
-    static int32  Spell_GetHitDamage(Spell* s)            { return s ? s->m_damage  : 0; }
-    static void   Spell_SetHitDamage(Spell* s, int32 val) { if (s) s->m_damage  = val; }
-    static int32  Spell_GetHitHeal(Spell* s)              { return s ? s->m_healing : 0; }
-    static void   Spell_SetHitHeal(Spell* s, int32 val)   { if (s) s->m_healing = val; }
+    // Hit damage / healing setters (via public Spell accessors)
+    static int32  Spell_GetHitDamage(Spell* s)            { return s ? s->GetHitDamage() : 0; }
+    static void   Spell_SetHitDamage(Spell* s, int32 val) { if (s) s->SetHitDamage(val); }
+    static int32  Spell_GetHitHeal(Spell* s)              { return s ? s->GetHitHeal()   : 0; }
+    static void   Spell_SetHitHeal(Spell* s, int32 val)   { if (s) s->SetHitHeal(val); }
 
     void RegisterSpellAPI(asIScriptEngine* _scriptEngine)
     {
