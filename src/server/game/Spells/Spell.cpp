@@ -9065,6 +9065,9 @@ void Spell::CallScriptCalcDamageHandlers(SpellEffectInfo const& spellEffectInfo,
 
         script->_FinishScriptCall();
     }
+#ifdef ANGELSCRIPT_INTEGRATION
+    sAngelScriptMgr->TriggerSpellCalcDamage(this, spellEffectInfo.EffectIndex, victim, damage, flatMod, pctMod);
+#endif
 }
 
 void Spell::CallScriptCalcHealingHandlers(SpellEffectInfo const& spellEffectInfo, Unit* victim, int32& healing, int32& flatMod, float& pctMod)
@@ -9077,6 +9080,9 @@ void Spell::CallScriptCalcHealingHandlers(SpellEffectInfo const& spellEffectInfo
 
         script->_FinishScriptCall();
     }
+#ifdef ANGELSCRIPT_INTEGRATION
+    sAngelScriptMgr->TriggerSpellCalcHealing(this, spellEffectInfo.EffectIndex, victim, healing, flatMod, pctMod);
+#endif
 }
 
 void Spell::CallScriptObjectAreaTargetSelectHandlers(std::list<WorldObject*>& targets, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType)

@@ -174,6 +174,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterFuncdef("void CreatureCallback(Creature@)");
     _scriptEngine->RegisterFuncdef("void SpellCallback(Spell@)");
     _scriptEngine->RegisterFuncdef("void SpellHitCallback(Spell@, Unit@)");  // per-spell ON_HIT
+    _scriptEngine->RegisterFuncdef("void SpellCalcCallback(Spell@, uint8, Unit@, int32&out, int32&out, float&out)");
     _scriptEngine->RegisterFuncdef("void UnitCallback(Unit@)");
     _scriptEngine->RegisterFuncdef("void GameObjectCallback(GameObject@)");
     _scriptEngine->RegisterFuncdef("void PlayerPlayerCallback(Player@, Player@)");
@@ -208,6 +209,8 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellEffectHandler(uint32, uint8, SpellCallback@)", asFUNCTION(+[](uint32 id, uint8 idx, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellEffectHandler(id, idx, f); }), asCALL_CDECL);
     // Per-spell-ID hook with target: void handler(Spell@, Unit@)
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, SpellHitCallback@)",
+        asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, SpellCalcCallback@)",
         asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
 
     // Unit callbacks
@@ -619,6 +622,40 @@ void AngelScriptMgr::TriggerSpellHit(Spell* s, Unit* t)
     }
 }
 void AngelScriptMgr::TriggerSpellEffectHit(Spell* s, uint8 i, Unit* t) { if(!s)return; for(auto& f:ASSpellHooks::instance()->GetHooks(SpellHookType::ON_EFFECT_HIT)){if(!_context)break;if(_context->Prepare(f)<0)continue;_context->SetArgObject(0,s);_context->SetArgByte(1,i);if(t)_context->SetArgObject(2,t);_context->Execute();} }
+
+void AngelScriptMgr::TriggerSpellCalcDamage(Spell* s, uint8 i, Unit* t, int32& damage, int32& flatMod, float& pctMod)
+{
+    if (!s) return;
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(s->GetSpellInfo()->Id, SpellHookType::ON_DAMAGE_CALC))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+        _context->SetArgObject(0, s);
+        _context->SetArgByte(1, i);
+        _context->SetArgObject(2, t);
+        _context->SetArgAddress(3, &damage);
+        _context->SetArgAddress(4, &flatMod);
+        _context->SetArgAddress(5, &pctMod);
+        _context->Execute();
+    }
+}
+
+void AngelScriptMgr::TriggerSpellCalcHealing(Spell* s, uint8 i, Unit* t, int32& healing, int32& flatMod, float& pctMod)
+{
+    if (!s) return;
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(s->GetSpellInfo()->Id, SpellHookType::ON_HEAL_CALC))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+        _context->SetArgObject(0, s);
+        _context->SetArgByte(1, i);
+        _context->SetArgObject(2, t);
+        _context->SetArgAddress(3, &healing);
+        _context->SetArgAddress(4, &flatMod);
+        _context->SetArgAddress(5, &pctMod);
+        _context->Execute();
+    }
+}
 
 bool AngelScriptMgr::TriggerSpellCheckCast(Spell* s)
 {

@@ -46,11 +46,17 @@ const int GO_ON_GOSSIP_HELLO  = 3;
 const int GO_ON_GOSSIP_SELECT = 4;
 
 // Spell
-const int SPELL_ON_CAST        = 0;
-const int SPELL_ON_HIT         = 1;
-const int SPELL_ON_EFFECT      = 2;
-const int SPELL_ON_EFFECT_HIT  = 3;
-const int SPELL_ON_CHECK_CAST  = 4;
+const int SPELL_ON_CAST         = 0;
+const int SPELL_ON_HIT          = 1;
+const int SPELL_ON_EFFECT_HIT   = 2;
+const int SPELL_ON_CHECK_CAST   = 3;
+const int SPELL_ON_DAMAGE_CALC  = 4;
+const int SPELL_ON_HEAL_CALC    = 5;
+const int SPELL_ON_BEFORE_CAST  = 6;
+const int SPELL_ON_AFTER_CAST   = 7;
+const int SPELL_ON_CHANNEL_START  = 8;
+const int SPELL_ON_CHANNEL_UPDATE = 9;
+const int SPELL_ON_CHANNEL_END    = 10;
 
 // Quest
 const int QUEST_ON_ACCEPT         = 0;
