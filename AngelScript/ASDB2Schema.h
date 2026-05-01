@@ -72,18 +72,18 @@ namespace AngelScript
 
         // Schema building
         void AddField(const std::string& name, DB2FieldType type, uint32 arraySize = 1, bool isSigned = true);
-        void AddInt8(const std::string& name);
-        void AddUInt8(const std::string& name);
-        void AddInt16(const std::string& name);
-        void AddUInt16(const std::string& name);
-        void AddInt32(const std::string& name);
-        void AddUInt32(const std::string& name);
-        void AddInt64(const std::string& name);
-        void AddUInt64(const std::string& name);
-        void AddFloat(const std::string& name);
-        void AddDouble(const std::string& name);
-        void AddString(const std::string& name);
-        void AddBool(const std::string& name);
+        void AddInt8(const std::string& name, uint32 count = 1);
+        void AddUInt8(const std::string& name, uint32 count = 1);
+        void AddInt16(const std::string& name, uint32 count = 1);
+        void AddUInt16(const std::string& name, uint32 count = 1);
+        void AddInt32(const std::string& name, uint32 count = 1);
+        void AddUInt32(const std::string& name, uint32 count = 1);
+        void AddInt64(const std::string& name, uint32 count = 1);
+        void AddUInt64(const std::string& name, uint32 count = 1);
+        void AddFloat(const std::string& name, uint32 count = 1);
+        void AddDouble(const std::string& name, uint32 count = 1);
+        void AddString(const std::string& name, uint32 count = 1);
+        void AddBool(const std::string& name, uint32 count = 1);
 
         // Schema info
         const std::string& GetName() const { return _name; }

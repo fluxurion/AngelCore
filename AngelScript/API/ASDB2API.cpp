@@ -495,65 +495,18 @@ namespace AngelScript
         return schema.get();
     }
 
-    static void DB2_SchemaAddInt8(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddInt8(name);
-    }
-
-    static void DB2_SchemaAddUInt8(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddUInt8(name);
-    }
-
-    static void DB2_SchemaAddInt16(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddInt16(name);
-    }
-
-    static void DB2_SchemaAddUInt16(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddUInt16(name);
-    }
-
-    static void DB2_SchemaAddInt32(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddInt32(name);
-    }
-
-    static void DB2_SchemaAddUInt32(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddUInt32(name);
-    }
-
-    static void DB2_SchemaAddInt64(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddInt64(name);
-    }
-
-    static void DB2_SchemaAddUInt64(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddUInt64(name);
-    }
-
-    static void DB2_SchemaAddFloat(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddFloat(name);
-    }
-
-    static void DB2_SchemaAddDouble(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddDouble(name);
-    }
-
-    static void DB2_SchemaAddString(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddString(name);
-    }
-
-    static void DB2_SchemaAddBool(ASDB2Schema* schema, const std::string& name)
-    {
-        if (schema) schema->AddBool(name);
-    }
+    static void DB2_SchemaAddInt8(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddInt8(name, count); }
+    static void DB2_SchemaAddUInt8(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddUInt8(name, count); }
+    static void DB2_SchemaAddInt16(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddInt16(name, count); }
+    static void DB2_SchemaAddUInt16(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddUInt16(name, count); }
+    static void DB2_SchemaAddInt32(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddInt32(name, count); }
+    static void DB2_SchemaAddUInt32(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddUInt32(name, count); }
+    static void DB2_SchemaAddInt64(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddInt64(name, count); }
+    static void DB2_SchemaAddUInt64(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddUInt64(name, count); }
+    static void DB2_SchemaAddFloat(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddFloat(name, count); }
+    static void DB2_SchemaAddDouble(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddDouble(name, count); }
+    static void DB2_SchemaAddString(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddString(name, count); }
+    static void DB2_SchemaAddBool(ASDB2Schema* schema, const std::string& name, uint32 count) { schema->AddBool(name, count); }
 
     static void DB2_SchemaFinalize(ASDB2Schema* schema)
     {
@@ -672,30 +625,18 @@ namespace AngelScript
             asFUNCTION(DB2_CreateSchema), asCALL_CDECL);
 
         // Schema field addition
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt8(const string& in)", 
-            asFUNCTION(DB2_SchemaAddInt8), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt8(const string& in)", 
-            asFUNCTION(DB2_SchemaAddUInt8), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt16(const string& in)", 
-            asFUNCTION(DB2_SchemaAddInt16), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt16(const string& in)", 
-            asFUNCTION(DB2_SchemaAddUInt16), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt32(const string& in)", 
-            asFUNCTION(DB2_SchemaAddInt32), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt32(const string& in)", 
-            asFUNCTION(DB2_SchemaAddUInt32), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt64(const string& in)", 
-            asFUNCTION(DB2_SchemaAddInt64), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt64(const string& in)", 
-            asFUNCTION(DB2_SchemaAddUInt64), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddFloat(const string& in)", 
-            asFUNCTION(DB2_SchemaAddFloat), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddDouble(const string& in)", 
-            asFUNCTION(DB2_SchemaAddDouble), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddString(const string& in)", 
-            asFUNCTION(DB2_SchemaAddString), asCALL_CDECL_OBJFIRST);
-        r = engine->RegisterObjectMethod("DB2Schema", "void AddBool(const string& in)", 
-            asFUNCTION(DB2_SchemaAddBool), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt8(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddInt8), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt8(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddUInt8), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt16(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddInt16), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt16(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddUInt16), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt32(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddInt32), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt32(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddUInt32), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddInt64(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddInt64), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddUInt64(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddUInt64), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddFloat(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddFloat), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddDouble(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddDouble), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddString(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddString), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Schema", "void AddBool(const string& in, uint32 count = 1)", asFUNCTION(DB2_SchemaAddBool), asCALL_CDECL_OBJFIRST);
 
         r = engine->RegisterObjectMethod("DB2Schema", "void Finalize()", 
             asFUNCTION(DB2_SchemaFinalize), asCALL_CDECL_OBJFIRST);

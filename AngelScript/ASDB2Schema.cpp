@@ -42,18 +42,18 @@ namespace AngelScript
         _fieldNameToIndex[name] = index;
     }
 
-    void ASDB2Schema::AddInt8(const std::string& name) { AddField(name, DB2FieldType::INT8); }
-    void ASDB2Schema::AddUInt8(const std::string& name) { AddField(name, DB2FieldType::UINT8); }
-    void ASDB2Schema::AddInt16(const std::string& name) { AddField(name, DB2FieldType::INT16); }
-    void ASDB2Schema::AddUInt16(const std::string& name) { AddField(name, DB2FieldType::UINT16); }
-    void ASDB2Schema::AddInt32(const std::string& name) { AddField(name, DB2FieldType::INT32); }
-    void ASDB2Schema::AddUInt32(const std::string& name) { AddField(name, DB2FieldType::UINT32); }
-    void ASDB2Schema::AddInt64(const std::string& name) { AddField(name, DB2FieldType::INT64); }
-    void ASDB2Schema::AddUInt64(const std::string& name) { AddField(name, DB2FieldType::UINT64); }
-    void ASDB2Schema::AddFloat(const std::string& name) { AddField(name, DB2FieldType::FLOAT); }
-    void ASDB2Schema::AddDouble(const std::string& name) { AddField(name, DB2FieldType::DOUBLE); }
-    void ASDB2Schema::AddString(const std::string& name) { AddField(name, DB2FieldType::STRING); }
-    void ASDB2Schema::AddBool(const std::string& name) { AddField(name, DB2FieldType::BOOL); }
+    void ASDB2Schema::AddInt8(const std::string& name, uint32 count) { AddField(name, DB2FieldType::INT8, count); }
+    void ASDB2Schema::AddUInt8(const std::string& name, uint32 count) { AddField(name, DB2FieldType::UINT8, count); }
+    void ASDB2Schema::AddInt16(const std::string& name, uint32 count) { AddField(name, DB2FieldType::INT16, count); }
+    void ASDB2Schema::AddUInt16(const std::string& name, uint32 count) { AddField(name, DB2FieldType::UINT16, count); }
+    void ASDB2Schema::AddInt32(const std::string& name, uint32 count) { AddField(name, DB2FieldType::INT32, count); }
+    void ASDB2Schema::AddUInt32(const std::string& name, uint32 count) { AddField(name, DB2FieldType::UINT32, count); }
+    void ASDB2Schema::AddInt64(const std::string& name, uint32 count) { AddField(name, DB2FieldType::INT64, count); }
+    void ASDB2Schema::AddUInt64(const std::string& name, uint32 count) { AddField(name, DB2FieldType::UINT64, count); }
+    void ASDB2Schema::AddFloat(const std::string& name, uint32 count) { AddField(name, DB2FieldType::FLOAT, count); }
+    void ASDB2Schema::AddDouble(const std::string& name, uint32 count) { AddField(name, DB2FieldType::DOUBLE, count); }
+    void ASDB2Schema::AddString(const std::string& name, uint32 count) { AddField(name, DB2FieldType::STRING, count); }
+    void ASDB2Schema::AddBool(const std::string& name, uint32 count) { AddField(name, DB2FieldType::BOOL, count); }
 
     const ASDB2FieldDef* ASDB2Schema::GetField(uint32 index) const
     {

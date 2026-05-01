@@ -246,51 +246,49 @@ namespace AngelScript
 
     bool GenericDB2Loader::ParseWDC5(const uint8* data, size_t size)
     {
-        // Simplified WDC5 Section Header
-        struct WDC5SectionHeader {
-            uint64 LayoutHash;
-            uint32 RecordCount;
-            uint32 Offset;
-            uint32 IdListSize;
-            uint32 CopyTableSize;
-            uint32 SparseTableSize;
-            uint32 IntAttributeSize;
-            uint32 PalletDataSize;
-            uint32 RelationshipDataSize;
-        };
+        uint32 headerSize = sizeof(DB2FileHeader);
+        if (size < headerSize) return false;
 
-        size_t headerSize = sizeof(DB2FileHeader);
-        if (headerSize > size) return false;
+        const DB2FileHeader* header = reinterpret_cast<const DB2FileHeader*>(data);
+        uint32 sectionCount = header->SectionCount;
+        if (sectionCount == 0) return false;
 
-        const WDC5SectionHeader* section = reinterpret_cast<const WDC5SectionHeader*>(data + headerSize);
+        // The first section header follows the file header
+        const DB2SectionHeader* section = reinterpret_cast<const DB2SectionHeader*>(data + headerSize);
+        
         uint32 totalRecords = section->RecordCount;
-        uint32 recordOffset = section->Offset;
+        uint32 recordSize = header->RecordSize;
+        uint32 dataOffset = section->FileOffset;
 
-        if (recordOffset + (totalRecords * _header.RecordSize) > size)
+        if (dataOffset + (totalRecords * recordSize) > size)
         {
-            TC_LOG_ERROR("angelscript.db2", "WDC5 records out of bounds: offset={} count={} size={}", recordOffset, totalRecords, size);
+            TC_LOG_ERROR("angelscript.db2", "WDC5 records out of bounds: offset={} count={} size={}", dataOffset, totalRecords, size);
             return false;
         }
 
-        // Parse IDs (they follow records usually, or are in the IdList)
+        // Parse IDs (optional, check IdTableSize)
         const uint32* ids = nullptr;
-        if (section->IdListSize > 0)
+        if (section->IdTableSize > 0)
         {
-             size_t idListOffset = recordOffset + (totalRecords * _header.RecordSize);
-             if (idListOffset + section->IdListSize <= size)
-                 ids = reinterpret_cast<const uint32*>(data + idListOffset);
+             size_t idTableOffset = dataOffset + (totalRecords * recordSize);
+             if (idTableOffset + section->IdTableSize <= size)
+                 ids = reinterpret_cast<const uint32*>(data + idTableOffset);
         }
 
+        _records.clear();
         _records.resize(totalRecords);
         for (uint32 i = 0; i < totalRecords; ++i)
         {
-            const uint8* recordData = data + recordOffset + (i * _header.RecordSize);
-            _records[i].SetRawData(recordData, _header.RecordSize);
+            const uint8* recordData = data + dataOffset + (i * recordSize);
+            _records[i].SetRawData(recordData, recordSize);
             
-            uint32 id = (ids) ? ids[i] : i; // Fallback to index if no ID list
+            uint32 id = (ids) ? ids[i] : i; // Fallback to index if no ID table
             _records[i].SetId(id);
             _idToIndex[id] = i;
         }
+
+        _header = *header;
+        _header.RecordCount = totalRecords; // Sync with section record count
 
         TC_LOG_INFO("angelscript.db2", "Loaded {} WDC5 records", _records.size());
         return true;

@@ -18,26 +18,40 @@ namespace AngelScript
     #pragma pack(push, 1)
     struct DB2FileHeader
     {
-        uint32 Signature;           // 'WDB2', 'WDB5', 'WDB6', 'WDC1', etc.
-        uint32 RecordCount;         // Number of records
-        uint32 FieldCount;          // Number of fields per record
-        uint32 RecordSize;          // Size of each record in bytes
-        uint32 StringTableSize;     // Size of string block
-        uint32 TableHash;           // Hash of table name
-        uint32 LayoutHash;          // Hash of layout (build-specific)
-        uint32 MinId;               // Minimum ID in file
-        uint32 MaxId;               // Maximum ID in file
-        uint32 Locale;              // Locale constant
-        uint32 CopyTableSize;       // Size of copy table
-        uint32 Flags;               // Flags
-        uint32 IdIndex;             // Index of ID field
-        uint32 TotalFieldCount;     // WDC1+
-        uint32 BitpackedDataOffset; // WDC1+
-        uint32 LookupColumnOffset;  // WDC1+
-        uint32 IndexDataSize;       // WDC1+
-        uint32 CommonDataSize;      // WDC1+
-        uint32 PalletDataSize;      // WDC1+
-        uint32 SectionCount;        // WDC1+
+        uint32 Signature;
+        uint32 Version;
+        char   Schema[128];
+        uint32 RecordCount;
+        uint32 FieldCount;
+        uint32 RecordSize;
+        uint32 StringTableSize;
+        uint32 TableHash;
+        uint32 LayoutHash;
+        uint32 MinId;
+        uint32 MaxId;
+        uint32 Locale;
+        uint16 Flags;
+        int16  IndexField;
+        uint32 TotalFieldCount;
+        uint32 PackedDataOffset;
+        uint32 ParentLookupCount;
+        uint32 ColumnMetaSize;
+        uint32 CommonDataSize;
+        uint32 PalletDataSize;
+        uint32 SectionCount;
+    };
+
+    struct DB2SectionHeader
+    {
+        uint64 TactId;
+        uint32 FileOffset;
+        uint32 RecordCount;
+        uint32 StringTableSize;
+        uint32 CatalogDataOffset;
+        uint32 IdTableSize;
+        uint32 ParentLookupDataSize;
+        uint32 CatalogDataCount;
+        uint32 CopyTableCount;
     };
     #pragma pack(pop)
 
