@@ -13,6 +13,9 @@ namespace AngelScript
     constexpr uint32 WDB6_SIGNATURE = 0x36424457; // 'WDB6'
     constexpr uint32 WDC1_SIGNATURE = 0x31434457; // 'WDC1'
     constexpr uint32 WDC2_SIGNATURE = 0x32434457; // 'WDC2'
+    constexpr uint32 WDC3_SIGNATURE = 0x33434457; // 'WDC3'
+    constexpr uint32 WDC4_SIGNATURE = 0x34434457; // 'WDC4'
+    constexpr uint32 WDC5_SIGNATURE = 0x35434457; // 'WDC5'
 
     // DB2DynamicRecord implementation
     void DB2DynamicRecord::SetRawData(const uint8* data, uint32 size)
@@ -160,6 +163,18 @@ namespace AngelScript
             case WDC2_SIGNATURE:
                 TC_LOG_INFO("angelscript.db2", "Parsing WDC2 format ({} records)", _header.RecordCount);
                 return ParseWDC2(data.data(), data.size());
+
+            case WDC3_SIGNATURE:
+                TC_LOG_INFO("angelscript.db2", "Parsing WDC3 format ({} records)", _header.RecordCount);
+                return ParseWDB2(data.data(), data.size());
+
+            case WDC4_SIGNATURE:
+                TC_LOG_INFO("angelscript.db2", "Parsing WDC4 format ({} records)", _header.RecordCount);
+                return ParseWDB2(data.data(), data.size());
+
+            case WDC5_SIGNATURE:
+                TC_LOG_INFO("angelscript.db2", "Parsing WDC5 format ({} records)", _header.RecordCount);
+                return ParseWDC5(data.data(), data.size());
                 
             default:
                 TC_LOG_ERROR("angelscript.db2", "Unknown DB2 signature: 0x{:08X}", _header.Signature);
@@ -227,6 +242,58 @@ namespace AngelScript
         // WDC2: Newest format
         TC_LOG_WARN("angelscript.db2", "WDC2 format not fully implemented, attempting basic parse");
         return ParseWDB2(data, size);
+    }
+
+    bool GenericDB2Loader::ParseWDC5(const uint8* data, size_t size)
+    {
+        // Simplified WDC5 Section Header
+        struct WDC5SectionHeader {
+            uint64 LayoutHash;
+            uint32 RecordCount;
+            uint32 Offset;
+            uint32 IdListSize;
+            uint32 CopyTableSize;
+            uint32 SparseTableSize;
+            uint32 IntAttributeSize;
+            uint32 PalletDataSize;
+            uint32 RelationshipDataSize;
+        };
+
+        size_t headerSize = sizeof(DB2FileHeader);
+        if (headerSize > size) return false;
+
+        const WDC5SectionHeader* section = reinterpret_cast<const WDC5SectionHeader*>(data + headerSize);
+        uint32 totalRecords = section->RecordCount;
+        uint32 recordOffset = section->Offset;
+
+        if (recordOffset + (totalRecords * _header.RecordSize) > size)
+        {
+            TC_LOG_ERROR("angelscript.db2", "WDC5 records out of bounds: offset={} count={} size={}", recordOffset, totalRecords, size);
+            return false;
+        }
+
+        // Parse IDs (they follow records usually, or are in the IdList)
+        const uint32* ids = nullptr;
+        if (section->IdListSize > 0)
+        {
+             size_t idListOffset = recordOffset + (totalRecords * _header.RecordSize);
+             if (idListOffset + section->IdListSize <= size)
+                 ids = reinterpret_cast<const uint32*>(data + idListOffset);
+        }
+
+        _records.resize(totalRecords);
+        for (uint32 i = 0; i < totalRecords; ++i)
+        {
+            const uint8* recordData = data + recordOffset + (i * _header.RecordSize);
+            _records[i].SetRawData(recordData, _header.RecordSize);
+            
+            uint32 id = (ids) ? ids[i] : i; // Fallback to index if no ID list
+            _records[i].SetId(id);
+            _idToIndex[id] = i;
+        }
+
+        TC_LOG_INFO("angelscript.db2", "Loaded {} WDC5 records", _records.size());
+        return true;
     }
 
     bool GenericDB2Loader::HasRecord(uint32 id) const

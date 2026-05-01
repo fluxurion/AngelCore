@@ -18,7 +18,7 @@ namespace AngelScript
     #pragma pack(push, 1)
     struct DB2FileHeader
     {
-        uint32 Signature;           // 'WDB2', 'WDB5', 'WDB6', etc.
+        uint32 Signature;           // 'WDB2', 'WDB5', 'WDB6', 'WDC1', etc.
         uint32 RecordCount;         // Number of records
         uint32 FieldCount;          // Number of fields per record
         uint32 RecordSize;          // Size of each record in bytes
@@ -28,9 +28,16 @@ namespace AngelScript
         uint32 MinId;               // Minimum ID in file
         uint32 MaxId;               // Maximum ID in file
         uint32 Locale;              // Locale constant
-        uint32 CopyTableSize;       // Size of copy table (WDB2)
-        uint32 MetaFlags;           // Flags (WDB5+)
-        uint32 IdIndex;             // Index of ID field (WDB5+)
+        uint32 CopyTableSize;       // Size of copy table
+        uint32 Flags;               // Flags
+        uint32 IdIndex;             // Index of ID field
+        uint32 TotalFieldCount;     // WDC1+
+        uint32 BitpackedDataOffset; // WDC1+
+        uint32 LookupColumnOffset;  // WDC1+
+        uint32 IndexDataSize;       // WDC1+
+        uint32 CommonDataSize;      // WDC1+
+        uint32 PalletDataSize;      // WDC1+
+        uint32 SectionCount;        // WDC1+
     };
     #pragma pack(pop)
 
@@ -116,6 +123,7 @@ namespace AngelScript
         bool ParseWDB6(const uint8* data, size_t size);
         bool ParseWDC1(const uint8* data, size_t size);
         bool ParseWDC2(const uint8* data, size_t size);
+        bool ParseWDC5(const uint8* data, size_t size);
         
         DB2FileHeader _header;
         std::vector<DB2DynamicRecord> _records;
