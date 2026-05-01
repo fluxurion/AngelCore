@@ -80,8 +80,9 @@ namespace AngelScript
     static int32 Player_GetReputation(Player* p, uint32 factionId) { return p ? p->GetReputation(factionId) : 0; }
     static void Player_SetReputation(Player* p, uint32 factionId, int32 value) { if (p) p->SetReputation(factionId, value); }
     static uint32 Player_GetGuildId(Player* p) { return p ? static_cast<uint32>(p->GetGuildId()) : 0; }
-    static uint32 Player_GetAccountId(Player* p) { return (p && p->GetSession()) ? p->GetSession()->GetAccountId() : 0; }
-    static std::string Player_GetAccountName(Player* p) { return (p && p->GetSession()) ? p->GetSession()->GetAccountName() : ""; }
+    static uint32 Player_GetAccountId(Player* p)           { return (p && p->GetSession()) ? p->GetSession()->GetAccountId() : 0; }
+    static uint32 Player_GetBattlenetAccountId(Player* p)  { return (p && p->GetSession()) ? p->GetSession()->GetBattlenetAccountId() : 0; }
+    static std::string Player_GetAccountName(Player* p)    { return (p && p->GetSession()) ? p->GetSession()->GetAccountName() : ""; }
     static void Player_SendNotification(Player* p, const std::string& msg) { if (p && p->GetSession()) p->GetSession()->SendNotification("%s", msg.c_str()); }
     static bool Player_HasAura(Player* p, uint32 spellId) { return p ? p->HasAura(spellId) : false; }
     static bool Player_TeleportTo(Player* p, uint32 mapId, float x, float y, float z, float o) { return p ? p->TeleportTo(mapId, x, y, z, o) : false; }
@@ -199,8 +200,9 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetGuildId() const", asFUNCTION(Player_GetGuildId), asCALL_CDECL_OBJFIRST);
 
         // Session
-        r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetAccountId() const", asFUNCTION(Player_GetAccountId), asCALL_CDECL_OBJFIRST);
-        r = _scriptEngine->RegisterObjectMethod("Player", "string GetAccountName() const", asFUNCTION(Player_GetAccountName), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetAccountId() const",          asFUNCTION(Player_GetAccountId),          asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetBattlenetAccountId() const",  asFUNCTION(Player_GetBattlenetAccountId), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "string GetAccountName() const",         asFUNCTION(Player_GetAccountName),        asCALL_CDECL_OBJFIRST);
 
         // Auras
         r = _scriptEngine->RegisterObjectMethod("Player", "bool HasAura(uint32) const", asFUNCTION(Player_HasAura), asCALL_CDECL_OBJFIRST);
