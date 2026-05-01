@@ -31,6 +31,7 @@
 #include "Player.h"
 #include "Creature.h"
 #include "Log.h"
+#include "SpellAuraDefines.h"
 
 namespace AngelScript
 {
@@ -82,6 +83,15 @@ namespace AngelScript
     static void Unit_RemoveUnitFlag(Unit* u, uint32 flag) { if (u) u->RemoveUnitFlag(static_cast<UnitFlags>(flag)); }
     static bool Unit_IsPlayer(Unit* u) { return u ? u->IsPlayer() : false; }
     static bool Unit_IsCreature(Unit* u) { return u ? u->IsCreature() : false; }
+
+    static float Unit_GetTotalAttackPowerValue(Unit* u) { return u ? u->GetTotalAttackPowerValue(BASE_ATTACK) : 0.f; }
+    static float Unit_GetVersatilityBonus(Unit* u)
+    {
+        if (!u) return 0.f;
+        if (Player* p = u->ToPlayer())
+            return p->GetRatingBonusValue(CR_VERSATILITY_DAMAGE_DONE) + float(p->GetTotalAuraModifier(SPELL_AURA_MOD_VERSATILITY));
+        return 0.f;
+    }
 
     // Cast methods — critical for type dispatch
     static Player* Unit_ToPlayer(Unit* u) { return u ? u->ToPlayer() : nullptr; }
@@ -155,6 +165,10 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Unit", "bool HasUnitFlag(uint32) const", asFUNCTION(Unit_HasUnitFlag), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Unit", "void SetUnitFlag(uint32)", asFUNCTION(Unit_SetUnitFlag), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Unit", "void RemoveUnitFlag(uint32)", asFUNCTION(Unit_RemoveUnitFlag), asCALL_CDECL_OBJFIRST);
+
+        // Stats
+        r = _scriptEngine->RegisterObjectMethod("Unit", "float GetTotalAttackPowerValue() const", asFUNCTION(Unit_GetTotalAttackPowerValue), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "float GetVersatilityBonus() const",       asFUNCTION(Unit_GetVersatilityBonus),         asCALL_CDECL_OBJFIRST);
 
         // Distance
         r = _scriptEngine->RegisterObjectMethod("Unit", "float GetDistanceTo(Unit@) const", asFUNCTION(Unit_GetDistanceTo), asCALL_CDECL_OBJFIRST);
