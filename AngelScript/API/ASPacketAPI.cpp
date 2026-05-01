@@ -39,9 +39,10 @@
 namespace AngelScript
 {
     // ---- WorldSession wrappers ----
-    static uint32  Session_GetAccountId(WorldSession* s)   { return s ? s->GetAccountId() : 0; }
-    static std::string Session_GetAccountName(WorldSession* s) { return s ? s->GetAccountName() : ""; }
-    static Player* Session_GetPlayer(WorldSession* s)      { return s ? s->GetPlayer() : nullptr; }
+    static uint32  Session_GetAccountId(WorldSession* s)          { return s ? s->GetAccountId() : 0; }
+    static uint32  Session_GetBattlenetAccountId(WorldSession* s)  { return s ? s->GetBattlenetAccountId() : 0; }
+    static std::string Session_GetAccountName(WorldSession* s)     { return s ? s->GetAccountName() : ""; }
+    static Player* Session_GetPlayer(WorldSession* s)              { return s ? s->GetPlayer() : nullptr; }
     static void    Session_SendPacket(WorldSession* s, PacketData* pd)
     {
         if (!s || !pd) return;
@@ -267,10 +268,11 @@ namespace AngelScript
         int r = _scriptEngine->RegisterObjectType("WorldSession", 0, asOBJ_REF | asOBJ_NOCOUNT);
         if (r >= 0 || r == asALREADY_REGISTERED)
         {
-            _scriptEngine->RegisterObjectMethod("WorldSession", "uint32 GetAccountId() const",   asFUNCTION(Session_GetAccountId),   asCALL_CDECL_OBJFIRST);
-            _scriptEngine->RegisterObjectMethod("WorldSession", "string GetAccountName() const",  asFUNCTION(Session_GetAccountName), asCALL_CDECL_OBJFIRST);
-            _scriptEngine->RegisterObjectMethod("WorldSession", "Player@ GetPlayer() const",      asFUNCTION(Session_GetPlayer),      asCALL_CDECL_OBJFIRST);
-            _scriptEngine->RegisterObjectMethod("WorldSession", "void SendPacket(PacketData@)",   asFUNCTION(Session_SendPacket),     asCALL_CDECL_OBJFIRST);
+            _scriptEngine->RegisterObjectMethod("WorldSession", "uint32 GetAccountId() const",          asFUNCTION(Session_GetAccountId),          asCALL_CDECL_OBJFIRST);
+            _scriptEngine->RegisterObjectMethod("WorldSession", "uint32 GetBattlenetAccountId() const",  asFUNCTION(Session_GetBattlenetAccountId), asCALL_CDECL_OBJFIRST);
+            _scriptEngine->RegisterObjectMethod("WorldSession", "string GetAccountName() const",         asFUNCTION(Session_GetAccountName),        asCALL_CDECL_OBJFIRST);
+            _scriptEngine->RegisterObjectMethod("WorldSession", "Player@ GetPlayer() const",             asFUNCTION(Session_GetPlayer),             asCALL_CDECL_OBJFIRST);
+            _scriptEngine->RegisterObjectMethod("WorldSession", "void SendPacket(PacketData@)",          asFUNCTION(Session_SendPacket),            asCALL_CDECL_OBJFIRST);
         }
 
         // OpcodeCallback funcdef: bool handler(WorldSession@, PacketData@)
@@ -345,6 +347,9 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("PacketData", "void WriteBit(bool)", asFUNCTION(PD_WriteBit), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("PacketData", "void WriteBits(uint32, uint32)", asFUNCTION(PD_WriteBits), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("PacketData", "void FlushBits()", asFUNCTION(PD_FlushBits), asCALL_CDECL_OBJFIRST);
+
+        // Factory
+        r = _scriptEngine->RegisterGlobalFunction("PacketData@ CreatePacketData(uint32)", asFUNCTION(PD_Factory), asCALL_CDECL);
 
         // Send
         r = _scriptEngine->RegisterGlobalFunction("void SendPacketToPlayer(Player@, PacketData@)", asFUNCTION(PD_SendToPlayer), asCALL_CDECL);
