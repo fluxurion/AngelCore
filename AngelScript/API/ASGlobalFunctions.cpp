@@ -32,7 +32,6 @@
 #include "Creature.h"
 #include "World.h"
 #include "WorldSession.h"
-#include <cstdio>
 #include <cmath>
 #include "ObjectAccessor.h"
 #include "ChatTextBuilder.h"
@@ -52,11 +51,7 @@ namespace AngelScript
 
     static void Global_Print(const std::string& msg)
     {
-        std::printf("[AngelScript] %s\n", msg.c_str());
-        std::fflush(stdout);
-        std::fprintf(stderr, "[AngelScript] %s\n", msg.c_str());
-        std::fflush(stderr);
-        TC_LOG_WARN("server.angelscript", "{}", msg);
+        TC_LOG_INFO("server.angelscript", "{}", msg);
     }
 
     static void Global_SendSystemMessage(Player* player, const std::string& msg)
