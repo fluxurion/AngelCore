@@ -65,6 +65,12 @@ namespace AngelScript
     }
     static uint8 Spell_GetSpellSchool(Spell* s) { return s ? static_cast<uint8>(s->GetSpellInfo()->SchoolMask) : 0; }
 
+    // Hit damage / healing setters (mirrors SpellScript::SetHitDamage / SetHitHeal)
+    static int32  Spell_GetHitDamage(Spell* s)            { return s ? s->m_damage  : 0; }
+    static void   Spell_SetHitDamage(Spell* s, int32 val) { if (s) s->m_damage  = val; }
+    static int32  Spell_GetHitHeal(Spell* s)              { return s ? s->m_healing : 0; }
+    static void   Spell_SetHitHeal(Spell* s, int32 val)   { if (s) s->m_healing = val; }
+
     void RegisterSpellAPI(asIScriptEngine* _scriptEngine)
     {
         int r = _scriptEngine->RegisterObjectType("Spell", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -93,6 +99,12 @@ namespace AngelScript
 
         // Target
         r = _scriptEngine->RegisterObjectMethod("Spell", "Unit@ GetTarget() const", asFUNCTION(Spell_GetTarget), asCALL_CDECL_OBJFIRST);
+
+        // Hit damage / healing override
+        r = _scriptEngine->RegisterObjectMethod("Spell", "int32 GetHitDamage() const",    asFUNCTION(Spell_GetHitDamage), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Spell", "void SetHitDamage(int32)",       asFUNCTION(Spell_SetHitDamage), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Spell", "int32 GetHitHeal() const",       asFUNCTION(Spell_GetHitHeal),   asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Spell", "void SetHitHeal(int32)",         asFUNCTION(Spell_SetHitHeal),   asCALL_CDECL_OBJFIRST);
 
         // Spell info
         r = _scriptEngine->RegisterObjectMethod("Spell", "float GetRange() const", asFUNCTION(Spell_GetRange), asCALL_CDECL_OBJFIRST);
