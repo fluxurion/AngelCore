@@ -59,6 +59,9 @@ class TC_GAME_API AuraEffect
         int32 GetAmountAsInt() const { return static_cast<int32>(_amount); }
         SpellEffectValue GetAmount() const { return _amount; }
         void SetAmount(SpellEffectValue amount) { _amount = amount; m_canBeRecalculated = false; }
+#ifdef ANGELSCRIPT_INTEGRATION
+        void SetBaseAmount(SpellEffectValue amount) { const_cast<SpellEffectValue&>(m_baseAmount) = amount; }
+#endif
 
         Optional<SpellEffectValue> GetEstimatedAmount() const { return _estimatedAmount; }
 

@@ -106,7 +106,7 @@ namespace AngelScript
     static uint8 AuraEffect_GetEffIndex(AuraEffect* ae) { return ae ? ae->GetEffIndex() : 0; }
     static double AuraEffect_GetAmount(AuraEffect* ae) { return ae ? ae->GetAmount() : 0; }
     static void AuraEffect_SetAmount(AuraEffect* ae, double amount) { if (ae) ae->SetAmount(amount); }
-    static void AuraEffect_SetBaseAmount(AuraEffect* ae, double amount) { if (ae) const_cast<double&>(ae->m_baseAmount) = amount; }
+    static void AuraEffect_SetBaseAmount(AuraEffect* ae, double amount) { if (ae) ae->SetBaseAmount(amount); }
     static Unit* AuraEffect_GetCaster(AuraEffect* ae) { return ae ? ae->GetCaster() : nullptr; }
     static Unit* AuraEffect_GetOwner(AuraEffect* ae) { return (ae && ae->GetBase() && ae->GetBase()->GetOwner()) ? ae->GetBase()->GetOwner()->ToUnit() : nullptr; }
 
