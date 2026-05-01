@@ -452,8 +452,6 @@ void AngelScriptMgr::RegisterCustomHook(CustomHookType type, asIScriptFunction* 
 {
     if (!func) return;
     _customHooks[static_cast<size_t>(type)].push_back(func);
-    TC_LOG_INFO("server.angelscript", "[AS] RegisterCustomHook type={} totalHooks={}",
-        static_cast<size_t>(type), _customHooks[static_cast<size_t>(type)].size());
 }
 
 bool AngelScriptMgr::TriggerCustomHook_SendPlayerChoice(Player* player, int32 choiceId)
