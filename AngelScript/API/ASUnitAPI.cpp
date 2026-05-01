@@ -41,6 +41,12 @@ namespace AngelScript
     static uint8 Unit_GetClass(Unit* u) { return u ? u->GetClass() : 0; }
     static uint8 Unit_GetRace(Unit* u) { return u ? u->GetRace() : 0; }
     static uint8 Unit_GetGender(Unit* u) { return u ? static_cast<uint8>(u->GetGender()) : 0; }
+    static Unit* Unit_GetAuraCaster(uint32 spellId, Unit* u)
+    {
+        if (!u) return nullptr;
+        Aura* aur = u->GetAura(spellId);
+        return aur ? aur->GetCaster() : nullptr;
+    }
     static uint32 Unit_GetGUIDLow(Unit* u) { return u ? static_cast<uint32>(u->GetGUID().GetCounter()) : 0; }
     static uint64 Unit_GetGUID(Unit* u) { return u ? u->GetGUID().GetRawValue(0) : 0; }
     static bool Unit_IsAlive(Unit* u) { return u ? u->IsAlive() : false; }
