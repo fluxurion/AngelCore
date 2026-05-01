@@ -71,6 +71,7 @@ namespace AngelScript
         ON_CHANNEL_START,   // Channeling starts
         ON_CHANNEL_UPDATE,  // Channeling update
         ON_CHANNEL_END,     // Channeling ends
+        ON_AURA_CALC_AMOUNT, // Calculate aura amount (points)
         COUNT
     };
 

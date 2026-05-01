@@ -165,7 +165,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     // Types must exist before ANY funcdef or method referencing them is registered.
     // Player/Creature/GameObject reference Unit@ and vice-versa (circular dependency).
     // Each API module also calls RegisterObjectType; asALREADY_REGISTERED is tolerated.
-    for (char const* t : { "Unit", "Player", "Creature", "GameObject", "Spell",
+    for (char const* t : { "Unit", "Player", "Creature", "GameObject", "Spell", "AuraEffect",
                            "PacketData", "QueryResult", "WorldObject",
                            "DB2Schema", "DB2Storage", "DB2Record" })
         _scriptEngine->RegisterObjectType(t, 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -177,13 +177,14 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterFuncdef("void SpellCallback(Spell@)");
     _scriptEngine->RegisterFuncdef("void SpellHitCallback(Spell@, Unit@)");  // per-spell ON_HIT
     _scriptEngine->RegisterFuncdef("void SpellCalcCallback(Spell@, uint8, Unit@, int32&out, int32&out, float&out)");
+    _scriptEngine->RegisterFuncdef("void AuraCalcAmountCallback(AuraEffect@, double&out, bool&out)");
     _scriptEngine->RegisterFuncdef("void UnitCallback(Unit@)");
     _scriptEngine->RegisterFuncdef("void GameObjectCallback(GameObject@)");
     _scriptEngine->RegisterFuncdef("void PlayerPlayerCallback(Player@, Player@)");
     _scriptEngine->RegisterFuncdef("void StringCallback(string &in)");
 
     RegisterPlayerAPI(); RegisterCreatureAPI(); RegisterGameObjectAPI(); RegisterUnitAPI();
-    RegisterSpellAPI(); RegisterPacketAPI(); RegisterDatabaseAPI(); RegisterGossipAPI();
+    RegisterSpellAPI(); RegisterAuraAPI(); RegisterPacketAPI(); RegisterDatabaseAPI(); RegisterGossipAPI();
     RegisterGlobalFunctions(); RegisterWorldAPI(); RegisterUpdateFieldAPI(); RegisterMathAPI(); RegisterStringAPI();
     RegisterQuestAPI(); RegisterCraftingAPI(); RegisterItemAPI(); RegisterDB2API(); RegisterDynamicDB2API();
 
@@ -196,7 +197,9 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterPacketScript(int, ScriptCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPacketScript(static_cast<PacketHookType>(t), f); }), asCALL_CDECL);
 
     // Player callbacks
-    _scriptEngine->RegisterGlobalFunction("void RegisterPlayerScript(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterSpellCalcHealingHook(uint32, SpellCalcCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_HEAL_CALC, f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterAuraCalcAmountHook(uint32, AuraCalcAmountCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_AURA_CALC_AMOUNT, f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterPlayerHook(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterInstanceScript(int, PlayerCallback@)",     asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterInstanceScript(static_cast<InstanceHookType>(t), f); }), asCALL_CDECL);
 
     // Creature callbacks
@@ -213,6 +216,8 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, SpellHitCallback@)",
         asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, SpellCalcCallback@)",
+        asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, AuraCalcAmountCallback@)",
         asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
 
     // Unit callbacks
@@ -239,6 +244,7 @@ void AngelScriptMgr::RegisterPlayerAPI()      { AngelScript::RegisterPlayerAPI(_
 void AngelScriptMgr::RegisterCreatureAPI()    { AngelScript::RegisterCreatureAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterGameObjectAPI()  { AngelScript::RegisterGameObjectAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterUnitAPI()        { AngelScript::RegisterUnitAPI(_scriptEngine); }
+void AngelScriptMgr::RegisterAuraAPI()        { AngelScript::RegisterAuraAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterSpellAPI()       { AngelScript::RegisterSpellAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterPacketAPI()      { AngelScript::RegisterPacketAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterDatabaseAPI()    { AngelScript::RegisterDatabaseAPI(_scriptEngine); }

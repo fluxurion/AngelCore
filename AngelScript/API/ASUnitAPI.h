@@ -8,6 +8,7 @@ class asIScriptEngine;
 namespace AngelScript
 {
     void RegisterUnitAPI(asIScriptEngine* engine);
+    void RegisterAuraAPI(asIScriptEngine* engine);
 }
 
 #endif // ANGELSCRIPT_INTEGRATION

@@ -162,6 +162,7 @@ namespace AngelScript
         void TriggerSpellCalcDamage(Spell* spell, uint8 effIndex, Unit* target, int32& damage, int32& flatMod, float& pctMod);
         void TriggerSpellCalcHealing(Spell* spell, uint8 effIndex, Unit* target, int32& healing, int32& flatMod, float& pctMod);
         void TriggerAuraCalcDamageAndHealing(AuraEffect const* aurEff, Unit* victim, int32& amount, int32& flatMod, float& pctMod);
+        void TriggerAuraCalcAmount(AuraEffect const* aurEff, double& amount, bool& canBeRecalculated);
         bool TriggerSpellCheckCast(Spell* spell);
         bool TriggerSpellEffect(Spell* spell, uint8 effIndex, SpellEffectHandleMode mode);
         
@@ -228,6 +229,7 @@ namespace AngelScript
         void RegisterGameObjectAPI();
         void RegisterUnitAPI();
         void RegisterSpellAPI();
+        void RegisterAuraAPI();
         void RegisterItemAPI();
         void RegisterCraftingAPI();
         void RegisterPacketAPI();

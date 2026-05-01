@@ -57,6 +57,7 @@ const int SPELL_ON_AFTER_CAST   = 7;
 const int SPELL_ON_CHANNEL_START  = 8;
 const int SPELL_ON_CHANNEL_UPDATE = 9;
 const int SPELL_ON_CHANNEL_END    = 10;
+const int SPELL_ON_AURA_CALC_AMOUNT = 11;
 
 // Quest
 const int QUEST_ON_ACCEPT         = 0;

@@ -99,6 +99,15 @@ namespace AngelScript
             return p->GetRatingBonusValue(CR_VERSATILITY_DAMAGE_DONE) + float(p->GetTotalAuraModifier(SPELL_AURA_MOD_VERSATILITY));
         return 0.f;
     }
+    
+    // ---- AuraEffect wrapper functions ----
+    static uint32 AuraEffect_GetId(AuraEffect* ae) { return ae ? ae->GetId() : 0; }
+    static uint8 AuraEffect_GetEffIndex(AuraEffect* ae) { return ae ? ae->GetEffIndex() : 0; }
+    static double AuraEffect_GetAmount(AuraEffect* ae) { return ae ? ae->GetAmount() : 0; }
+    static void AuraEffect_SetAmount(AuraEffect* ae, double amount) { if (ae) ae->SetAmount(amount); }
+    static Unit* AuraEffect_GetCaster(AuraEffect* ae) { return ae ? ae->GetCaster() : nullptr; }
+    static Unit* AuraEffect_GetOwner(AuraEffect* ae) { return (ae && ae->GetBase() && ae->GetBase()->GetOwner()) ? ae->GetBase()->GetOwner()->ToUnit() : nullptr; }
+
 
     // Cast methods — critical for type dispatch
     static Player* Unit_ToPlayer(Unit* u) { return u ? u->ToPlayer() : nullptr; }
@@ -190,6 +199,25 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Unit", "float GetOrientation() const", asFUNCTION(Unit_GetOrientation), asCALL_CDECL_OBJFIRST);
 
         TC_LOG_INFO("server.angelscript", "Unit API registered ({} methods)", 50);
+    }
+
+    void RegisterAuraAPI(asIScriptEngine* _scriptEngine)
+    {
+        int r = _scriptEngine->RegisterObjectType("AuraEffect", 0, asOBJ_REF | asOBJ_NOCOUNT);
+        if (r < 0 && r != asALREADY_REGISTERED)
+        {
+            TC_LOG_ERROR("angelscript", "Failed to register AuraEffect type: {}", r);
+            return;
+        }
+
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "uint32 GetId() const", asFUNCTION(AuraEffect_GetId), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "uint8 GetEffIndex() const", asFUNCTION(AuraEffect_GetEffIndex), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "double GetAmount() const", asFUNCTION(AuraEffect_GetAmount), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "void SetAmount(double)", asFUNCTION(AuraEffect_SetAmount), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "Unit@ GetCaster() const", asFUNCTION(AuraEffect_GetCaster), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "Unit@ GetOwner() const", asFUNCTION(AuraEffect_GetOwner), asCALL_CDECL_OBJFIRST);
+
+        TC_LOG_INFO("server.angelscript", "Aura API registered");
     }
 
 } // namespace AngelScript

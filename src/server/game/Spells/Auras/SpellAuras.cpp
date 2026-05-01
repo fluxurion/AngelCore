@@ -2231,6 +2231,9 @@ void Aura::CallScriptEffectCalcAmountHandlers(AuraEffect const* aurEff, SpellEff
 
         script->_FinishScriptCall();
     }
+#ifdef ANGELSCRIPT_INTEGRATION
+    sAngelScriptMgr->TriggerAuraCalcAmount(aurEff, amount, canBeRecalculated);
+#endif
 }
 
 void Aura::CallScriptEffectCalcPeriodicHandlers(AuraEffect const* aurEff, bool& isPeriodic, int32& amplitude)
