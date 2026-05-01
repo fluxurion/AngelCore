@@ -221,6 +221,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
         asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
 
     // Unit callbacks
+    _scriptEngine->RegisterGlobalFunction("void RegisterPlayerScript(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPlayerScript(int, UnitCallback@)",         asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
 
     // Player+Player callbacks
