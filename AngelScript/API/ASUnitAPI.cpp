@@ -106,6 +106,7 @@ namespace AngelScript
     static uint8 AuraEffect_GetEffIndex(AuraEffect* ae) { return ae ? ae->GetEffIndex() : 0; }
     static double AuraEffect_GetAmount(AuraEffect* ae) { return ae ? ae->GetAmount() : 0; }
     static void AuraEffect_SetAmount(AuraEffect* ae, double amount) { if (ae) ae->SetAmount(amount); }
+    static void AuraEffect_SetBaseAmount(AuraEffect* ae, double amount) { if (ae) const_cast<double&>(ae->m_baseAmount) = amount; }
     static Unit* AuraEffect_GetCaster(AuraEffect* ae) { return ae ? ae->GetCaster() : nullptr; }
     static Unit* AuraEffect_GetOwner(AuraEffect* ae) { return (ae && ae->GetBase() && ae->GetBase()->GetOwner()) ? ae->GetBase()->GetOwner()->ToUnit() : nullptr; }
 
@@ -215,6 +216,7 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("AuraEffect", "uint8 GetEffIndex() const", asFUNCTION(AuraEffect_GetEffIndex), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("AuraEffect", "double GetAmount() const", asFUNCTION(AuraEffect_GetAmount), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("AuraEffect", "void SetAmount(double)", asFUNCTION(AuraEffect_SetAmount), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("AuraEffect", "void SetBaseAmount(double)", asFUNCTION(AuraEffect_SetBaseAmount), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("AuraEffect", "Unit@ GetCaster() const", asFUNCTION(AuraEffect_GetCaster), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("AuraEffect", "Unit@ GetOwner() const", asFUNCTION(AuraEffect_GetOwner), asCALL_CDECL_OBJFIRST);
 
