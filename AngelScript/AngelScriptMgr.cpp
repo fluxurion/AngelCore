@@ -49,6 +49,8 @@
 #include "API/ASCreatureAPI.h"
 #include "API/ASGameObjectAPI.h"
 #include "API/ASUnitAPI.h"
+#include "SpellAuras.h"
+#include "SpellAuraEffects.h"
 #include "API/ASSpellAPI.h"
 #include "API/ASGlobalFunctions.h"
 #include "API/ASDatabaseAPI.h"
@@ -639,6 +641,30 @@ void AngelScriptMgr::TriggerSpellHit(Spell* s, Unit* t)
     }
 }
 void AngelScriptMgr::TriggerSpellEffectHit(Spell* s, uint8 i, Unit* t) { if(!s)return; for(auto& f:ASSpellHooks::instance()->GetHooks(SpellHookType::ON_EFFECT_HIT)){if(!_context)break;if(_context->Prepare(f)<0)continue;_context->SetArgObject(0,s);_context->SetArgByte(1,i);if(t)_context->SetArgObject(2,t);_context->Execute();} }
+
+void AngelScriptMgr::TriggerAuraCalcDamageAndHealing(AuraEffect const* aurEff, Unit* victim, int32& amount, int32& flatMod, float& pctMod)
+{
+    if (!aurEff || !victim) return;
+    Aura* aur = aurEff->GetBase();
+    if (!aur) return;
+
+    SpellHookType hookType = (aurEff->GetAuraType() == SPELL_AURA_PERIODIC_HEAL) ? SpellHookType::ON_HEAL_CALC : SpellHookType::ON_DAMAGE_CALC;
+
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(aur->GetId(), hookType))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+        
+        // Pass nullptr for spell since this is a periodic tick (no spell object)
+        _context->SetArgObject(0, nullptr); 
+        _context->SetArgByte(1, aurEff->GetEffIndex());
+        _context->SetArgObject(2, victim);
+        _context->SetArgAddress(3, &amount);
+        _context->SetArgAddress(4, &flatMod);
+        _context->SetArgAddress(5, &pctMod);
+        _context->Execute();
+    }
+}
 
 void AngelScriptMgr::TriggerSpellCalcDamage(Spell* s, uint8 i, Unit* t, int32& damage, int32& flatMod, float& pctMod)
 {

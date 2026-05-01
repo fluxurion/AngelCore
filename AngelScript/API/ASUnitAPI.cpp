@@ -27,6 +27,7 @@
 #pragma pop_macro("OUT")
 #pragma pop_macro("IN")
 
+#include "SpellAuras.h"
 #include "Unit.h"
 #include "Player.h"
 #include "Creature.h"

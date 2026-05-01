@@ -9,6 +9,20 @@
 #ifndef ANGELSCRIPTMGR_H
 #define ANGELSCRIPTMGR_H
 
+// Forward declarations for AngelScript
+class asIScriptEngine;
+class asIScriptContext;
+class asIScriptModule;
+class Unit;
+class Spell;
+class Aura;
+class AuraEffect;
+class Player;
+class GameObject;
+class Quest;
+class asIScriptFunction;
+class CScriptBuilder;
+
 #ifdef ANGELSCRIPT_INTEGRATION
 
 #include "Common.h"
@@ -34,10 +48,6 @@
 #include <unordered_map>
 #include <vector>
 
-// Forward declarations for AngelScript
-class asIScriptEngine;
-class asIScriptContext;
-class asIScriptModule;
 class asIScriptFunction;
 class CScriptBuilder;
 
