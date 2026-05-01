@@ -40,6 +40,7 @@
 #include "GameTime.h"
 #include "Log.h"
 #include <string>
+#include "SpellDefines.h"
 
 namespace AngelScript
 {
@@ -97,6 +98,16 @@ namespace AngelScript
     static bool World_GetConfigBool(uint32 configId) { return sWorld->getBoolConfig(static_cast<WorldBoolConfigs>(configId)); }
     static uint32 World_GetPlayerCount() { return sWorld->GetActiveSessionCount(); }
     static uint32 World_GetMaxPlayerCount() { return sWorld->GetMaxActiveSessionCount(); }
+
+    // ---- CastSpell with custom base points ----
+    static void Global_CastSpellWithBP(Unit* caster, Unit* target, uint32 spellId, float bp0, float bp1)
+    {
+        if (!caster || !target) return;
+        CastSpellExtraArgs args(TRIGGERED_FULL_MASK);
+        args.AddSpellMod(SPELLVALUE_BASE_POINT0, static_cast<int32>(bp0));
+        args.AddSpellMod(SPELLVALUE_BASE_POINT1, static_cast<int32>(bp1));
+        caster->CastSpell(target, spellId, args);
+    }
 
     // ---- Find player by name ----
     static Player* Global_FindPlayerByName(const std::string& name)
@@ -159,6 +170,9 @@ namespace AngelScript
         // Player finders
         r = _scriptEngine->RegisterGlobalFunction("Player@ FindPlayerByName(const string& in)", asFUNCTION(Global_FindPlayerByName), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("Player@ FindPlayerByGUID(uint64)", asFUNCTION(Global_FindPlayerByGUID), asCALL_CDECL);
+
+        // Spell casting with custom base points
+        r = _scriptEngine->RegisterGlobalFunction("void CastSpellWithBP(Unit@, Unit@, uint32, float, float)", asFUNCTION(Global_CastSpellWithBP), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "Global functions registered");
     }
