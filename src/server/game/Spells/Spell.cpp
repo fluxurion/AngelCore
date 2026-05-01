@@ -2775,6 +2775,11 @@ void Spell::TargetInfo::PreprocessTarget(Spell* spell)
 
     spell->CallScriptOnHitHandlers();
 
+#ifdef ANGELSCRIPT_INTEGRATION
+    if (sAngelScriptMgr->IsEnabled())
+        sAngelScriptMgr->TriggerSpellHit(spell, _spellHitTarget);
+#endif
+
     // scripts can modify damage/healing for current target, save them
     Damage = spell->m_damage;
     Healing = spell->m_healing;
@@ -3825,6 +3830,11 @@ void Spell::_cast(bool skipCheck)
     PrepareTriggersExecutedOnHit();
 
     CallScriptOnCastHandlers();
+
+#ifdef ANGELSCRIPT_INTEGRATION
+    if (sAngelScriptMgr->IsEnabled())
+        sAngelScriptMgr->TriggerSpellCast(this);
+#endif
 
     // traded items have trade slot instead of guid in m_itemTargetGUID
     // set to real guid to be sent later to the client
