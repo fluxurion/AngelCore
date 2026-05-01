@@ -40,6 +40,7 @@
 #include "Log.h"
 #include <string>
 #include "SpellDefines.h"
+#include "Config.h"
 
 namespace AngelScript
 {
@@ -110,6 +111,11 @@ namespace AngelScript
         return ObjectAccessor::FindPlayerByName(name);
     }
 
+    static std::string Global_GetConfigString(const std::string& key, const std::string& defaultVal)
+    {
+        return sConfigMgr->GetStringDefault(key, defaultVal);
+    }
+
     static Player* Global_FindPlayerByGUID(uint64 guidRaw)
     {
         ObjectGuid guid;
@@ -164,6 +170,7 @@ namespace AngelScript
 
         // Player finders
         r = _scriptEngine->RegisterGlobalFunction("Player@ FindPlayerByName(const string& in)", asFUNCTION(Global_FindPlayerByName), asCALL_CDECL);
+        r = _scriptEngine->RegisterGlobalFunction("string GetConfigString(const string& in, const string& in)", asFUNCTION(Global_GetConfigString), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("Player@ FindPlayerByGUID(uint64)", asFUNCTION(Global_FindPlayerByGUID), asCALL_CDECL);
 
         // Spell casting with custom base points
