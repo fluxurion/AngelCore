@@ -62,6 +62,8 @@ class InstanceScript;
 class WorldSession;
 class Unit;
 class Spell;
+class Aura;
+class AuraEffect;
 class SpellInfo;
 class Quest;
 class Item;

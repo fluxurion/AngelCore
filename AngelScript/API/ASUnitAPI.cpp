@@ -32,6 +32,7 @@
 #include "Player.h"
 #include "Creature.h"
 #include "Log.h"
+#include "SpellAuraEffects.h"
 #include "SpellAuraDefines.h"
 
 namespace AngelScript
