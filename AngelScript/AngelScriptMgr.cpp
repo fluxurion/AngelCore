@@ -597,7 +597,24 @@ void AngelScriptMgr::TriggerCreatureKillPlayer(Creature* c, Player* p) { if(!c||
 void AngelScriptMgr::TriggerGameObjectHook(GameObjectHookType t, GameObject* g) { if(!g)return; EXEC_HOOKS(ASGameObjectHooks::instance()->GetHooks(t), _context->SetArgObject(0,g)); }
 void AngelScriptMgr::TriggerGameObjectUse(GameObject* g, Player* p) { if(!g||!p)return; EXEC_HOOKS(ASGameObjectHooks::instance()->GetHooks(GameObjectHookType::ON_USE), _context->SetArgObject(0,g); _context->SetArgObject(1,p)); }
 
-void AngelScriptMgr::TriggerSpellHook(SpellHookType t, Spell* s) { if(!s)return; EXEC_HOOKS(ASSpellHooks::instance()->GetHooks(t), _context->SetArgObject(0,s)); }
+void AngelScriptMgr::TriggerSpellHook(SpellHookType t, Spell* s)
+{
+    if (!s) return;
+    // Global hooks (SpellCallback - 1 arg)
+    EXEC_HOOKS(ASSpellHooks::instance()->GetHooks(t), _context->SetArgObject(0, s));
+
+    // Per-spell hooks (can be SpellCallback or SpellHitCallback)
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(s->GetSpellInfo()->Id, t))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+        _context->SetArgObject(0, s);
+        // If the function has 2 parameters, pass nullptr for the second one (target)
+        if (f->GetParamCount() >= 2)
+            _context->SetArgObject(1, nullptr);
+        _context->Execute();
+    }
+}
 void AngelScriptMgr::TriggerSpellCast(Spell* s) { TriggerSpellHook(SpellHookType::ON_CAST,s); }
 void AngelScriptMgr::TriggerSpellHit(Spell* s, Unit* t)
 {
