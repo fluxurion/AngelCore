@@ -674,6 +674,30 @@ void AngelScriptMgr::TriggerSpellCalcHealing(Spell* s, uint8 i, Unit* t, int32& 
     }
 }
 
+void AngelScriptMgr::TriggerAuraCalcDamageAndHealing(AuraEffect const* aurEff, Unit* victim, int32& amount, int32& flatMod, float& pctMod)
+{
+    if (!aurEff) return;
+    uint32 spellId = aurEff->GetId();
+    uint8 effIndex = aurEff->GetEffIndex();
+    
+    SpellHookType type = SpellHookType::ON_DAMAGE_CALC;
+    if (aurEff->GetSpellInfo()->GetEffect(effIndex).IsHeal())
+        type = SpellHookType::ON_HEAL_CALC;
+
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(spellId, type))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+        _context->SetArgObject(0, nullptr); // Spell is null for periodic ticks
+        _context->SetArgByte(1, effIndex);
+        _context->SetArgObject(2, victim);
+        _context->SetArgAddress(3, &amount);
+        _context->SetArgAddress(4, &flatMod);
+        _context->SetArgAddress(5, &pctMod);
+        _context->Execute();
+    }
+}
+
 bool AngelScriptMgr::TriggerSpellCheckCast(Spell* s)
 {
     if(!s) return false;

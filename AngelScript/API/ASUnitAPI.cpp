@@ -125,6 +125,7 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Unit", "bool IsCreature() const", asFUNCTION(Unit_IsCreature), asCALL_CDECL_OBJFIRST);
 
         // Cast methods — critical
+        r = _scriptEngine->RegisterObjectMethod("Unit", "Unit@ GetAuraCaster(uint32 spellId)", asFUNCTION(Unit_GetAuraCaster), asCALL_CDECL_OBJLAST);
         r = _scriptEngine->RegisterObjectMethod("Unit", "Player@ ToPlayer() const", asFUNCTION(Unit_ToPlayer), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Unit", "Creature@ ToCreature() const", asFUNCTION(Unit_ToCreature), asCALL_CDECL_OBJFIRST);
 

@@ -2280,6 +2280,9 @@ void Aura::CallScriptCalcDamageAndHealingHandlers(AuraEffect const* aurEff, Aura
 
         script->_FinishScriptCall();
     }
+#ifdef ANGELSCRIPT_INTEGRATION
+    sAngelScriptMgr->TriggerAuraCalcDamageAndHealing(aurEff, victim, damageOrHealing, flatMod, pctMod);
+#endif
 }
 
 void Aura::CallScriptEffectAbsorbHandlers(AuraEffect* aurEff, AuraApplication const* aurApp, DamageInfo& dmgInfo, uint32& absorbAmount, bool& defaultPrevented)
