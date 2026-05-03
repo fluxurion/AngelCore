@@ -235,13 +235,6 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
 
     // Player+Player callbacks
     _scriptEngine->RegisterGlobalFunction("void RegisterPlayerScript(int, PlayerPlayerCallback@)", asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
-    // CharEnum hook — bool handler(WorldSession@, PacketData@)
-    // The PacketData contains the already-serialised SMSG_ENUM_CHARACTERS_RESULT bytes.
-    // Script should append warband group data then call session.SendPacket(packet) and return true.
-    _scriptEngine->RegisterFuncdef("bool CharEnumCallback(WorldSession@, PacketData@)");
-    _scriptEngine->RegisterGlobalFunction("void RegisterCharEnumHook(CharEnumCallback@)",
-        asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_CHAR_ENUM, f); }),
-        asCALL_CDECL);
 
     RegisterSharedDataAPI(); RegisterScriptClassesAPI(); RegisterEnhancedPacketAPI();
     RegisterScriptAttributesAPI(); RegisterInstanceAPI(); RegisterBattlegroundAPI();
