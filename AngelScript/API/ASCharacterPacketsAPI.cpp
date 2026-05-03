@@ -112,11 +112,11 @@ namespace AngelScript
     }
 
     static void EnumResult_AddWarbandGroupMember(WorldPackets::Character::EnumCharactersResult* result, uint32 groupIndex,
-                                                  uint32 slotIndex, int32 memberType, int32 contentSetID, uint64 guidLow)
+                                                  uint32 warbandScenePlacementId, int32 memberType, int32 contentSetID, uint64 guidLow)
     {
         if (!result || groupIndex >= result->WarbandGroups.size()) return;
         WorldPackets::Character::WarbandGroupMember member;
-        member.SlotIndex = slotIndex;
+        member.WarbandScenePlacementID = warbandScenePlacementId;
         member.Type = memberType;
         member.ContentSetID = contentSetID;
         member.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
