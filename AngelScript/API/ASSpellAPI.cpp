@@ -71,6 +71,19 @@ namespace AngelScript
     static int32  Spell_GetHitHeal(Spell* s)              { return s ? s->GetHitHeal()   : 0; }
     static void   Spell_SetHitHeal(Spell* s, int32 val)   { if (s) s->SetHitHeal(val); }
 
+    // Set base point for a specific effect index (0-31)
+    static void   Spell_SetBasePoint(Spell* s, uint8 effIndex, float val)
+    {
+        if (!s || effIndex >= MAX_SPELL_EFFECTS) return;
+        s->m_spellValue->EffectBasePoints[effIndex] = val;
+        s->m_spellValue->CustomBasePointsMask |= 1 << effIndex;
+    }
+    static float  Spell_GetBasePoint(Spell* s, uint8 effIndex)
+    {
+        if (!s || effIndex >= MAX_SPELL_EFFECTS) return 0.0f;
+        return s->m_spellValue->EffectBasePoints[effIndex];
+    }
+
     void RegisterSpellAPI(asIScriptEngine* _scriptEngine)
     {
         int r = _scriptEngine->RegisterObjectType("Spell", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -106,12 +119,16 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Spell", "int32 GetHitHeal() const",       asFUNCTION(Spell_GetHitHeal),   asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Spell", "void SetHitHeal(int32)",         asFUNCTION(Spell_SetHitHeal),   asCALL_CDECL_OBJFIRST);
 
+        // Base point override (effect index 0-31)
+        r = _scriptEngine->RegisterObjectMethod("Spell", "void SetBasePoint(uint8, float)", asFUNCTION(Spell_SetBasePoint), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Spell", "float GetBasePoint(uint8) const", asFUNCTION(Spell_GetBasePoint), asCALL_CDECL_OBJFIRST);
+
         // Spell info
         r = _scriptEngine->RegisterObjectMethod("Spell", "float GetRange() const", asFUNCTION(Spell_GetRange), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Spell", "uint32 GetPowerCost() const", asFUNCTION(Spell_GetPowerCost), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Spell", "uint8 GetSpellSchool() const", asFUNCTION(Spell_GetSpellSchool), asCALL_CDECL_OBJFIRST);
 
-        TC_LOG_INFO("server.angelscript", "Spell API registered ({} methods)", 18);
+        TC_LOG_INFO("server.angelscript", "Spell API registered ({} methods)", 20);
     }
 
 } // namespace AngelScript
