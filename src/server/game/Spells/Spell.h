@@ -952,6 +952,19 @@ class TC_GAME_API Spell
         void  SetHitDamage(int32 val) { m_damage  = val;  }
         int32 GetHitHeal()   const    { return m_healing; }
         void  SetHitHeal(int32 val)   { m_healing = val;  }
+
+        // Base point accessors for AngelScript API
+        void   SetSpellBasePoint(uint8 effIndex, float val)
+        {
+            if (effIndex >= MAX_SPELL_EFFECTS) return;
+            m_spellValue->EffectBasePoints[effIndex] = val;
+            m_spellValue->CustomBasePointsMask |= 1 << effIndex;
+        }
+        float  GetSpellBasePoint(uint8 effIndex) const
+        {
+            if (effIndex >= MAX_SPELL_EFFECTS) return 0.0f;
+            return m_spellValue->EffectBasePoints[effIndex];
+        }
 #endif
         template <class Script>
         Script* GetScript() const { return static_cast<Script*>(GetScriptByType(typeid(Script))); }

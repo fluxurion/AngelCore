@@ -74,14 +74,13 @@ namespace AngelScript
     // Set base point for a specific effect index (0-31)
     static void   Spell_SetBasePoint(Spell* s, uint8 effIndex, float val)
     {
-        if (!s || effIndex >= MAX_SPELL_EFFECTS) return;
-        s->m_spellValue->EffectBasePoints[effIndex] = val;
-        s->m_spellValue->CustomBasePointsMask |= 1 << effIndex;
+        if (!s) return;
+        s->SetSpellBasePoint(effIndex, val);
     }
     static float  Spell_GetBasePoint(Spell* s, uint8 effIndex)
     {
-        if (!s || effIndex >= MAX_SPELL_EFFECTS) return 0.0f;
-        return s->m_spellValue->EffectBasePoints[effIndex];
+        if (!s) return 0.0f;
+        return s->GetSpellBasePoint(effIndex);
     }
 
     void RegisterSpellAPI(asIScriptEngine* _scriptEngine)
