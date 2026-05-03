@@ -252,5 +252,22 @@ void GiveXP(Player@ player, uint32 amount)
     Print("GiveXP: " + amount + " to " + player.GetName());
 }
 
+// Get absolute path to a DB2 file based on config
+string GetDB2Path(const string& in db2Name)
+{
+    string dataDir = GetConfigString("DataDir", ".");
+    uint len = dataDir.length();
+    if (len > 0)
+    {
+        string lastChar = dataDir.substr(len - 1, 1);
+        if (lastChar != "/" && lastChar != "\\")
+            dataDir += "/";
+    }
+
+    // Try enUS first, then fallback to direct path
+    string db2Path = dataDir + "dbc/enUS/" + db2Name + ".db2";
+    return db2Path;
+}
+
 // SendFloatingText(Player@, const string& in, uint32) and PlaySoundToPlayer(Player@, uint32)
 // are provided by the C++ Global API — do not redefine them here.
