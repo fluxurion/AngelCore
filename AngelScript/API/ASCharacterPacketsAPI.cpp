@@ -84,6 +84,45 @@ namespace AngelScript
         return nullptr;
     }
 
+    // ---- Warband Group helpers ----
+    static void EnumResult_ClearWarbandGroups(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return;
+        result->WarbandGroups.clear();
+    }
+
+    static uint32_t EnumResult_GetWarbandGroupCount(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return 0;
+        return static_cast<uint32>(result->WarbandGroups.size());
+    }
+
+    static void EnumResult_AddWarbandGroup(WorldPackets::Character::EnumCharactersResult* result, uint64 groupId, uint8 orderIndex,
+                                           uint32 warbandSceneId, uint32 flags, int32 contentSetID, const std::string& name)
+    {
+        if (!result) return;
+        WorldPackets::Character::WarbandGroup group;
+        group.GroupID = groupId;
+        group.OrderIndex = orderIndex;
+        group.WarbandSceneID = warbandSceneId;
+        group.Flags = flags;
+        group.ContentSetID = contentSetID;
+        group.Name = name;
+        result->WarbandGroups.push_back(std::move(group));
+    }
+
+    static void EnumResult_AddWarbandGroupMember(WorldPackets::Character::EnumCharactersResult* result, uint32 groupIndex,
+                                                  uint32 slotIndex, int32 memberType, int32 contentSetID, uint64 guidLow)
+    {
+        if (!result || groupIndex >= result->WarbandGroups.size()) return;
+        WorldPackets::Character::WarbandGroupMember member;
+        member.SlotIndex = slotIndex;
+        member.Type = memberType;
+        member.ContentSetID = contentSetID;
+        member.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
+        result->WarbandGroups[groupIndex].Members.push_back(std::move(member));
+    }
+
     void RegisterCharacterPacketsAPI()
     {
         asIScriptEngine* engine = AngelScriptMgr::instance()->GetEngine();
@@ -101,5 +140,11 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetCharacterCount()", asFUNCTION(EnumResult_GetCharacterCount), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ GetCharacter(uint32 index)", asFUNCTION(EnumResult_GetCharacter), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ FindCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindCharacterByGuid), asCALL_CDECL_OBJFIRST);
+
+        // Warband group methods
+        engine->RegisterObjectMethod("EnumCharactersResult", "void ClearWarbandGroups()", asFUNCTION(EnumResult_ClearWarbandGroups), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetWarbandGroupCount()", asFUNCTION(EnumResult_GetWarbandGroupCount), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroup(uint64 groupId, uint8 orderIndex, uint32 warbandSceneId, uint32 flags, int32 contentSetID, const string& in name)", asFUNCTION(EnumResult_AddWarbandGroup), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroupMember(uint32 groupIndex, uint32 slotIndex, int32 memberType, int32 contentSetID, uint64 guidLow)", asFUNCTION(EnumResult_AddWarbandGroupMember), asCALL_CDECL_OBJFIRST);
     }
 }
