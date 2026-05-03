@@ -168,7 +168,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     // Player/Creature/GameObject reference Unit@ and vice-versa (circular dependency).
     // Each API module also calls RegisterObjectType; asALREADY_REGISTERED is tolerated.
     for (char const* t : { "Unit", "Player", "Creature", "GameObject", "Spell", "AuraEffect",
-                           "PacketData", "QueryResult", "WorldObject", "EnumCharactersResult", "CharEnumCharacterInfo",
+                           "PacketData", "QueryResult", "WorldObject", "WorldSession", "EnumCharactersResult", "CharEnumCharacterInfo",
                            "DB2Schema", "DB2Storage", "DB2Record" })
         _scriptEngine->RegisterObjectType(t, 0, asOBJ_REF | asOBJ_NOCOUNT);
 
