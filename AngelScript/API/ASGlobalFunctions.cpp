@@ -41,6 +41,7 @@
 #include <string>
 #include "SpellDefines.h"
 #include "Config.h"
+#include "AngelScriptMgr.h"
 
 namespace AngelScript
 {
@@ -144,6 +145,35 @@ namespace AngelScript
         return std::sqrt(dx * dx + dy * dy + dz * dz);
     }
 
+    // ---- AngelScript Engine Memory Statistics ----
+    static uint32_t GetASModuleCount()
+    {
+        if (!sAngelScriptMgr || !sAngelScriptMgr->GetEngine()) return 0;
+        return sAngelScriptMgr->GetEngine()->GetModuleCount();
+    }
+
+    static std::string GetASModuleName(uint32_t index)
+    {
+        if (!sAngelScriptMgr || !sAngelScriptMgr->GetEngine()) return "";
+        asIScriptModule* mod = sAngelScriptMgr->GetEngine()->GetModuleByIndex(index);
+        return mod ? std::string(mod->GetName()) : "";
+    }
+
+    static uint32_t GetASModuleFunctionCount(uint32_t index)
+    {
+        if (!sAngelScriptMgr || !sAngelScriptMgr->GetEngine()) return 0;
+        asIScriptModule* mod = sAngelScriptMgr->GetEngine()->GetModuleByIndex(index);
+        return mod ? static_cast<uint32_t>(mod->GetFunctionCount()) : 0;
+    }
+
+    static uint32_t GetASGCObjectCount()
+    {
+        if (!sAngelScriptMgr || !sAngelScriptMgr->GetEngine()) return 0;
+        asUINT currentSize = 0;
+        sAngelScriptMgr->GetEngine()->GetGCStatistics(&currentSize);
+        return currentSize;
+    }
+
     void RegisterGlobalFunctions(asIScriptEngine* _scriptEngine)
     {
         int r;
@@ -175,6 +205,12 @@ namespace AngelScript
 
         // Spell casting with custom base points
         r = _scriptEngine->RegisterGlobalFunction("void CastSpellWithBP(Unit@, Unit@, uint32, float, float)", asFUNCTION(Global_CastSpellWithBP), asCALL_CDECL);
+
+        // AngelScript memory statistics
+        r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptModuleCount()", asFUNCTION(GetASModuleCount), asCALL_CDECL);
+        r = _scriptEngine->RegisterGlobalFunction("string GetAngelScriptModuleName(uint32)", asFUNCTION(GetASModuleName), asCALL_CDECL);
+        r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptModuleFunctionCount(uint32)", asFUNCTION(GetASModuleFunctionCount), asCALL_CDECL);
+        r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptGCSize()", asFUNCTION(GetASGCObjectCount), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "Global functions registered");
     }
