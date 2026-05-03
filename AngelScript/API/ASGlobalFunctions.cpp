@@ -174,6 +174,31 @@ namespace AngelScript
         return currentSize;
     }
 
+    static std::string GetASStatsSummary()
+    {
+        if (!sAngelScriptMgr || !sAngelScriptMgr->GetEngine()) return "AS: not initialized";
+        
+        asIScriptEngine* engine = sAngelScriptMgr->GetEngine();
+        asUINT gcSize = 0;
+        engine->GetGCStatistics(&gcSize);
+        
+        uint32_t moduleCount = engine->GetModuleCount();
+        uint32_t totalFuncs = 0;
+        for (uint32_t i = 0; i < moduleCount; i++)
+        {
+            asIScriptModule* mod = engine->GetModuleByIndex(i);
+            if (mod) totalFuncs += mod->GetFunctionCount();
+        }
+        
+        // Estimate memory: ~1KB per function + overhead
+        uint32_t estimatedKB = (totalFuncs * 1) + (moduleCount * 10) + (gcSize / 100);
+        
+        return "[AS] " + std::to_string(moduleCount) + " modules, " + 
+               std::to_string(totalFuncs) + " funcs, " + 
+               std::to_string(gcSize) + " gc objs, ~" + 
+               std::to_string(estimatedKB) + "KB";
+    }
+
     void RegisterGlobalFunctions(asIScriptEngine* _scriptEngine)
     {
         int r;
@@ -211,6 +236,7 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("string GetAngelScriptModuleName(uint32)", asFUNCTION(GetASModuleName), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptModuleFunctionCount(uint32)", asFUNCTION(GetASModuleFunctionCount), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptGCSize()", asFUNCTION(GetASGCObjectCount), asCALL_CDECL);
+        r = _scriptEngine->RegisterGlobalFunction("string GetAngelScriptStatsSummary()", asFUNCTION(GetASStatsSummary), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "Global functions registered");
     }
