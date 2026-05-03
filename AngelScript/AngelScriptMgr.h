@@ -23,6 +23,11 @@ class Quest;
 class asIScriptFunction;
 class CScriptBuilder;
 
+namespace WorldPackets::Character
+{
+    class EnumCharactersResult;
+}
+
 #ifdef ANGELSCRIPT_INTEGRATION
 
 #include "Common.h"
@@ -165,6 +170,7 @@ namespace AngelScript
         void TriggerSpellCalcHealing(Spell* spell, uint8 effIndex, Unit* target, int32& healing, int32& flatMod, float& pctMod);
         void TriggerAuraCalcDamageAndHealing(AuraEffect const* aurEff, Unit* victim, int32& amount, int32& flatMod, float& pctMod);
         void TriggerAuraCalcAmount(AuraEffect const* aurEff, double& amount, bool& canBeRecalculated);
+        void TriggerSpellAuraApply(Unit* target, AuraEffect const* aurEff);
         bool TriggerSpellCheckCast(Spell* spell);
         bool TriggerSpellEffect(Spell* spell, uint8 effIndex, SpellEffectHandleMode mode);
         
@@ -198,7 +204,7 @@ namespace AngelScript
         // Custom hook points — returns true if hook handled/overrode the event
         bool TriggerCustomHook_SendPlayerChoice(Player* player, int32 choiceId);
         bool TriggerCustomHook_GetLockedDungeons(Player* player, std::vector<uint32>& lockedDungeons);
-        bool TriggerCustomHook_CharEnum(WorldSession* session, PacketData& enumPacket);
+        bool TriggerCustomHook_CharEnum(WorldSession* session, WorldPackets::Character::EnumCharactersResult& enumResult);
 
         // Per-entry AI dispatch — called from Dispatch/ CreatureScript/GameObjectScript
         CreatureAI* GetCreatureAI(Creature* creature);

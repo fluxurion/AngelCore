@@ -41,6 +41,7 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "ByteBuffer.h"
+#include "Server/Packets/CharacterPackets.h"
 #include "ScriptMgr.h"
 #include "Chat.h"
 #include "AccountMgr.h"
@@ -49,6 +50,7 @@
 #include "API/ASCreatureAPI.h"
 #include "API/ASGameObjectAPI.h"
 #include "API/ASUnitAPI.h"
+#include "API/ASCharacterPacketsAPI.h"
 #include "SpellAuras.h"
 #include "SpellAuraEffects.h"
 #include "API/ASSpellAPI.h"
@@ -166,7 +168,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     // Player/Creature/GameObject reference Unit@ and vice-versa (circular dependency).
     // Each API module also calls RegisterObjectType; asALREADY_REGISTERED is tolerated.
     for (char const* t : { "Unit", "Player", "Creature", "GameObject", "Spell", "AuraEffect",
-                           "PacketData", "QueryResult", "WorldObject",
+                           "PacketData", "QueryResult", "WorldObject", "EnumCharactersResult", "CharEnumCharacterInfo",
                            "DB2Schema", "DB2Storage", "DB2Record" })
         _scriptEngine->RegisterObjectType(t, 0, asOBJ_REF | asOBJ_NOCOUNT);
 
@@ -178,13 +180,16 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterFuncdef("void SpellHitCallback(Spell@, Unit@)");  // per-spell ON_HIT
     _scriptEngine->RegisterFuncdef("void SpellCalcCallback(Spell@, uint8, Unit@, int32&out, int32&out, float&out)");
     _scriptEngine->RegisterFuncdef("void AuraCalcAmountCallback(AuraEffect@, double&out, bool&out)");
+    _scriptEngine->RegisterFuncdef("void AuraApplyCallback(Unit@, AuraEffect@)");  // ON_AURA_APPLY
     _scriptEngine->RegisterFuncdef("void UnitCallback(Unit@)");
     _scriptEngine->RegisterFuncdef("void GameObjectCallback(GameObject@)");
     _scriptEngine->RegisterFuncdef("void PlayerPlayerCallback(Player@, Player@)");
     _scriptEngine->RegisterFuncdef("void StringCallback(string &in)");
+    _scriptEngine->RegisterFuncdef("void CharEnumCallback(WorldSession@, EnumCharactersResult@)");
 
     RegisterPlayerAPI(); RegisterCreatureAPI(); RegisterGameObjectAPI(); RegisterUnitAPI();
     RegisterSpellAPI(); RegisterAuraAPI(); RegisterPacketAPI(); RegisterDatabaseAPI(); RegisterGossipAPI();
+    RegisterCharacterPacketsAPI();
     RegisterGlobalFunctions(); RegisterWorldAPI(); RegisterUpdateFieldAPI(); RegisterMathAPI(); RegisterStringAPI();
     RegisterQuestAPI(); RegisterCraftingAPI(); RegisterItemAPI(); RegisterDB2API(); RegisterDynamicDB2API();
 
@@ -200,6 +205,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellCalcHealingHook(uint32, SpellCalcCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_HEAL_CALC, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterAuraCalcAmountHook(uint32, AuraCalcAmountCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_AURA_CALC_AMOUNT, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPlayerHook(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterCharEnumHook(CharEnumCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterWorldScript(WorldHookType::ON_CHAR_ENUM, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterInstanceScript(int, PlayerCallback@)",     asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterInstanceScript(static_cast<InstanceHookType>(t), f); }), asCALL_CDECL);
 
     // Creature callbacks
@@ -218,6 +224,9 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, SpellCalcCallback@)",
         asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, AuraCalcAmountCallback@)",
+        asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
+    // Aura apply callback (Spell@, Unit@, AuraEffect@)
+    _scriptEngine->RegisterGlobalFunction("void RegisterSpellScript(uint32, int, AuraApplyCallback@)",
         asFUNCTION(+[](uint32 id, int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterSpellHook(id, static_cast<SpellHookType>(t), f); }), asCALL_CDECL);
 
     // Unit callbacks
@@ -487,7 +496,7 @@ bool AngelScriptMgr::TriggerCustomHook_SendPlayerChoice(Player* player, int32 ch
     return false;
 }
 
-bool AngelScriptMgr::TriggerCustomHook_CharEnum(WorldSession* session, PacketData& enumPacket)
+bool AngelScriptMgr::TriggerCustomHook_CharEnum(WorldSession* session, WorldPackets::Character::EnumCharactersResult& enumResult)
 {
     auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_CHAR_ENUM)];
     for (auto& func : hooks)
@@ -496,7 +505,7 @@ bool AngelScriptMgr::TriggerCustomHook_CharEnum(WorldSession* session, PacketDat
         int r = _context->Prepare(func);
         if (r < 0) continue;
         _context->SetArgObject(0, session);
-        _context->SetArgObject(1, &enumPacket);
+        _context->SetArgObject(1, &enumResult);
         r = _context->Execute();
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] CharEnum EXCEPTION: {} at {}:{}",
@@ -683,10 +692,25 @@ void AngelScriptMgr::TriggerAuraCalcAmount(AuraEffect const* aurEff, double& amo
     {
         if (!_context) break;
         if (_context->Prepare(f) < 0) continue;
-        
-        _context->SetArgObject(0, (void*)aurEff); 
+
+        _context->SetArgObject(0, (void*)aurEff);
         _context->SetArgAddress(1, &amount);
         _context->SetArgAddress(2, &canBeRecalculated);
+        _context->Execute();
+    }
+}
+
+void AngelScriptMgr::TriggerSpellAuraApply(Unit* target, AuraEffect const* aurEff)
+{
+    if (!target || !aurEff) return;
+
+    for (auto& f : ASSpellHooks::instance()->GetSpellHooks(aurEff->GetSpellInfo()->Id, SpellHookType::ON_AURA_APPLY))
+    {
+        if (!_context) break;
+        if (_context->Prepare(f) < 0) continue;
+
+        _context->SetArgObject(0, target);
+        _context->SetArgObject(1, (void*)aurEff);
         _context->Execute();
     }
 }

@@ -79,6 +79,9 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "SpellPackets.h"
+#ifdef ANGELSCRIPT_INTEGRATION
+#include "AngelScriptMgr.h"
+#endif
 #include "StringConvert.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
@@ -3582,6 +3585,10 @@ void Unit::_ApplyAura(AuraApplication* aurApp, uint32 effMask)
         if (effMask & 1 << aurEff->GetEffIndex())
         {
             aurApp->_HandleEffect(aurEff->GetEffIndex(), true);
+#ifdef ANGELSCRIPT_INTEGRATION
+            if (sAngelScriptMgr)
+                sAngelScriptMgr->TriggerSpellAuraApply(this, aurEff);
+#endif
             if (aurApp->GetRemoveMode())
                 break;
         }

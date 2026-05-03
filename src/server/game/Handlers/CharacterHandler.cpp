@@ -495,21 +495,12 @@ void WorldSession::HandleCharEnum(CharacterDatabaseQueryHolder const& holder)
     }
 
 #ifdef ANGELSCRIPT_INTEGRATION
+    // Allow AngelScript to modify char enum data before serialization
     if (sAngelScriptMgr->IsEnabled())
-    {
-        WorldPacket const* builtPacket = charEnum.Write();
-        PacketData pd;
-        pd.opcode = builtPacket->GetOpcode();
-        pd.data.assign(builtPacket->data(), builtPacket->data() + builtPacket->size());
-        pd.size = static_cast<uint32>(pd.data.size());
-        if (!sAngelScriptMgr->TriggerCustomHook_CharEnum(this, pd))
-            SendPacket(builtPacket);
-    }
-    else
-        SendPacket(charEnum.Write());
-#else
-    SendPacket(charEnum.Write());
+        sAngelScriptMgr->TriggerCustomHook_CharEnum(this, charEnum);
 #endif
+
+    SendPacket(charEnum.Write());
 
     if (!charEnum.IsDeletedCharacters)
         _collectionMgr->SendWarbandSceneCollectionData();
