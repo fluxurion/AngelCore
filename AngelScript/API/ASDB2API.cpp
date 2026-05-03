@@ -45,6 +45,7 @@
 #include "../ASDB2Storage.h"
 #include <string>
 #include <memory>
+#include <scriptarray/scriptarray.h>
 
 namespace AngelScript
 {
@@ -567,6 +568,27 @@ namespace AngelScript
         return storage ? storage->GetNumRows() : 0;
     }
 
+    static CScriptArray* DB2_StorageGetAllIds(ASDB2Storage* storage)
+    {
+        if (!storage) return nullptr;
+
+        asIScriptContext* ctx = asGetActiveContext();
+        if (!ctx) return nullptr;
+        asIScriptEngine* engine = ctx->GetEngine();
+        asITypeInfo* arrayType = engine->GetTypeInfoByDecl("array<uint32>");
+        
+        CScriptArray* array = CScriptArray::Create(arrayType);
+        std::vector<uint32> ids = storage->GetAllIds();
+        array->Resize(static_cast<uint32>(ids.size()));
+        
+        for (uint32 i = 0; i < ids.size(); ++i)
+        {
+            *(uint32*)array->At(i) = ids[i];
+        }
+        
+        return array;
+    }
+
     // Record field access
     static uint32 DB2_RecordGetUInt32(ASDB2DynamicRecord* record, const std::string& fieldName)
     {
@@ -666,6 +688,8 @@ namespace AngelScript
             asFUNCTION(DB2_StorageGetRecord), asCALL_CDECL_OBJFIRST);
         r = engine->RegisterObjectMethod("DB2Storage", "uint32 GetNumRows()", 
             asFUNCTION(DB2_StorageGetNumRows), asCALL_CDECL_OBJFIRST);
+        r = engine->RegisterObjectMethod("DB2Storage", "array<uint32>@ GetAllIds()", 
+            asFUNCTION(DB2_StorageGetAllIds), asCALL_CDECL_OBJFIRST);
 
         // ---- DB2Record methods (type already registered above) ----
         r = engine->RegisterObjectMethod("DB2Record", "uint32 GetUInt32(const string& in)", 
