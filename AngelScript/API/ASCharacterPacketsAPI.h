@@ -10,9 +10,12 @@
 
 class asIScriptEngine;
 
+namespace WorldPackets { namespace Character { class EnumCharactersResult; } }
+
 namespace AngelScript
 {
     void RegisterCharacterPacketsAPI();
+    void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result);
 }
 
 #endif // ANGELSCRIPT_INTEGRATION

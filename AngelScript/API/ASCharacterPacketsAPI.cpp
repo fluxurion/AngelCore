@@ -31,9 +31,27 @@
 #include "Server/Packets/CharacterPackets.h"
 #include "Database/DatabaseEnv.h"
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
 namespace AngelScript
 {
+    // Persistent storage for warband group names (WarbandGroup uses string_view)
+    // Maps EnumCharactersResult* to a vector of strings that persist until cleared
+    static std::unordered_map<void*, std::vector<std::string>> g_WarbandGroupNameStorage;
+
+    static void StoreWarbandGroupName(WorldPackets::Character::EnumCharactersResult* result, std::string&& name)
+    {
+        if (!result) return;
+        auto& storage = g_WarbandGroupNameStorage[result];
+        storage.push_back(std::move(name));
+    }
+
+    static void ClearWarbandGroupNameStorage(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return;
+        g_WarbandGroupNameStorage.erase(result);
+    }
     // ---- CharacterInfo helpers ----
     static uint64_t CharInfo_GetGuid(WorldPackets::Character::EnumCharactersResult::CharacterInfo* info)
     {
@@ -89,6 +107,7 @@ namespace AngelScript
     {
         if (!result) return;
         result->WarbandGroups.clear();
+        ClearWarbandGroupNameStorage(result);
     }
 
     static uint32_t EnumResult_GetWarbandGroupCount(WorldPackets::Character::EnumCharactersResult* result)
@@ -101,13 +120,18 @@ namespace AngelScript
                                            uint32 warbandSceneId, uint32 flags, int32 contentSetID, const std::string& name)
     {
         if (!result) return;
+
+        // Store name in persistent storage (string_view needs stable memory)
+        StoreWarbandGroupName(result, std::string(name));
+
         WorldPackets::Character::WarbandGroup group;
         group.GroupID = groupId;
         group.OrderIndex = orderIndex;
         group.WarbandSceneID = warbandSceneId;
         group.Flags = flags;
         group.ContentSetID = contentSetID;
-        group.Name = name;
+        // Point string_view to our persistent storage
+        group.Name = g_WarbandGroupNameStorage[result].back();
         result->WarbandGroups.push_back(std::move(group));
     }
 
@@ -121,6 +145,11 @@ namespace AngelScript
         member.ContentSetID = contentSetID;
         member.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
         result->WarbandGroups[groupIndex].Members.push_back(std::move(member));
+    }
+
+    void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        ClearWarbandGroupNameStorage(result);
     }
 
     void RegisterCharacterPacketsAPI()

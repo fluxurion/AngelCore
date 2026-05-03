@@ -48,9 +48,9 @@
 #include "Language.h"
 #include "API/ASPlayerAPI.h"
 #include "API/ASCreatureAPI.h"
+#include "API/ASCharacterPacketsAPI.h"
 #include "API/ASGameObjectAPI.h"
 #include "API/ASUnitAPI.h"
-#include "API/ASCharacterPacketsAPI.h"
 #include "SpellAuras.h"
 #include "SpellAuraEffects.h"
 #include "API/ASSpellAPI.h"
@@ -505,9 +505,6 @@ bool AngelScriptMgr::TriggerCustomHook_CharEnum(WorldSession* session, WorldPack
                 _context->GetExceptionString(),
                 _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
                 _context->GetExceptionLineNumber());
-        bool retVal = (r == asEXECUTION_FINISHED) ? (_context->GetReturnByte() != 0) : false;
-        if (retVal)
-            return true;
     }
     return false;
 }
