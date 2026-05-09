@@ -255,6 +255,7 @@ namespace AngelScript
         void RegisterGossipAPI();
         void RegisterEnhancedPacketAPI();
         void RegisterScriptAttributesAPI();
+        void RegisterSpawnAPI();
         void RegisterInstanceAPI();
         void RegisterBattlegroundAPI();
         void RegisterArenaAPI();

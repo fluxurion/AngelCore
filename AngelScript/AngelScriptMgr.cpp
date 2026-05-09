@@ -61,6 +61,7 @@
 #include "API/ASDB2API.h"
 #include "API/ASWorldAPI.h"
 #include "API/ASUpdateFieldAPI.h"
+#include "API/ASSpawnAPI.h"
 #include "Dispatch/ASDispatch.h"
 #include <filesystem>
 #include <fstream>
@@ -192,6 +193,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     RegisterCharacterPacketsAPI();
     RegisterGlobalFunctions(); RegisterWorldAPI(); RegisterUpdateFieldAPI(); RegisterMathAPI(); RegisterStringAPI();
     RegisterQuestAPI(); RegisterCraftingAPI(); RegisterItemAPI(); RegisterDB2API(); RegisterDynamicDB2API();
+    RegisterSpawnAPI();
 
     // ---- Hook registration functions exposed to scripts ----
     // No-arg callbacks (ScriptCallback)
@@ -261,6 +263,7 @@ void AngelScriptMgr::RegisterQuestAPI()       { _scriptEngine->RegisterGlobalFun
 void AngelScriptMgr::RegisterCraftingAPI()    { _scriptEngine->RegisterGlobalFunction("void RegisterCraftingScript(int, ScriptCallback@)", asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterCraftingScript(static_cast<CraftingHookType>(t), f); }), asCALL_CDECL); }
 void AngelScriptMgr::RegisterItemAPI() {}
 void AngelScriptMgr::RegisterDB2API() { AngelScript::RegisterDB2API(_scriptEngine); }
+void AngelScriptMgr::RegisterSpawnAPI() { AngelScript::RegisterSpawnAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterDynamicDB2API() { AngelScript::RegisterDynamicDB2API(_scriptEngine); }
 void AngelScriptMgr::InitializeDB2Loader() { /* DB2 data is already loaded by TC at startup — no custom loading needed */ }
 void AngelScriptMgr::RegisterSharedDataAPI() {}
@@ -343,8 +346,19 @@ bool AngelScriptMgr::LoadScripts()
 
     uint32 ok=0,fail=0;
     for (auto& e : fs::recursive_directory_iterator(_scriptPath))
-        if (e.is_regular_file() && e.path().extension()==".as" && e.path().parent_path().filename()!="includes")
-            CompileScript(e.path().string(), fs::relative(e.path(),_scriptPath).string()) ? ok++ : fail++;
+    {
+        if (!e.is_regular_file() || e.path().extension() != ".as")
+            continue;
+        // Skip includes and examples directories
+        std::string parentDir = e.path().parent_path().filename().string();
+        if (parentDir == "includes" || parentDir == "examples")
+            continue;
+        // Also skip anything under examples/ at any depth
+        std::string relPath = fs::relative(e.path(), _scriptPath).string();
+        if (relPath.find("examples/") == 0 || relPath.find("examples\\") == 0)
+            continue;
+        CompileScript(e.path().string(), fs::relative(e.path(),_scriptPath).string()) ? ok++ : fail++;
+    }
     TC_LOG_INFO("server.loading", ">> AngelScript: compiled {} script(s), {} failed", ok, fail);
     return fail==0;
 }
