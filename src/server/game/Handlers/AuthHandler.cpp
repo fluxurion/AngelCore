@@ -31,7 +31,7 @@
 #include "World.h"
 
 #ifdef ANGELSCRIPT_INTEGRATION
-#include "AngelScript/AngelScriptMgr.h"
+#include "AngelScriptMgr.h"
 #endif
 
 void WorldSession::SendAuthResponse(uint32 code, bool queued, uint32 queuePos)
