@@ -238,6 +238,16 @@ namespace AngelScript
         sAngelScriptMgr->RegisterCustomHook(static_cast<CustomHookType>(hookType), func);
     }
 
+    static void RegisterCustomHook_AuthResponse(asIScriptFunction* func)
+    {
+        sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_AUTH_RESPONSE, func);
+    }
+
+    static void RegisterCustomHook_FeatureSystemStatusGlueScreen(asIScriptFunction* func)
+    {
+        sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN, func);
+    }
+
     // ========================================================================
     // Registration
     // ========================================================================
@@ -330,6 +340,10 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("void RegisterSendPlayerChoiceHook(int, ScriptCallback@)", asFUNCTION(RegisterCustomHook_SendPlayerChoice), asCALL_CDECL);
         // GetLockedDungeons hook: bool OnGetLockedDungeons(Player@)
         r = _scriptEngine->RegisterGlobalFunction("void RegisterGetLockedDungeonsHook(int, ScriptCallback@)", asFUNCTION(RegisterCustomHook_SendPlayerChoice), asCALL_CDECL);
+        // AuthResponse hook: uint32 OnAuthResponse(WorldSession@, uint32 currencyID) - returns modified currencyID
+        r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(ScriptCallback@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
+        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(WorldSession@, bool bpayStoreAvailable, int32 activeBoostType)
+        r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(ScriptCallback@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "World API registered (phase, summon, ObjectMgr, update fields, hook points)");
     }

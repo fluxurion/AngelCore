@@ -38,6 +38,7 @@
 #include "Spell.h"
 #include "SpellInfo.h"
 #include "ObjectMgr.h"
+#include "CollectionMgr.h"
 #include "Log.h"
 
 namespace AngelScript
@@ -90,6 +91,47 @@ namespace AngelScript
     // ---- NEW: Missing critical API wrappers ----
     static uint32 Player_GetTeam(Player* p) { return p ? static_cast<uint32>(p->GetTeam()) : 0; }
     static void Player_CastSpell(Player* p, Unit* target, uint32 spellId) { if (p && target) p->CastSpell(target, spellId, true); }
+    static bool Player_LearnSpell(Player* p, uint32 spellId) { if (!p) return false; p->LearnSpell(spellId, false); return true; }
+    static bool Player_HasSpell(Player* p, uint32 spellId) { return p ? p->HasSpell(spellId) : false; }
+    static uint32 Player_GetFreeInventorySlotCount(Player* p) { return p ? p->GetFreeInventorySlotCount() : 0; }
+
+    // ---- CollectionMgr wrappers for BattlePay delivery ----
+    static bool Player_AddMount(Player* p, uint32 spellId)
+    {
+        if (!p || !p->GetSession() || !p->GetSession()->GetCollectionMgr())
+            return false;
+        return p->GetSession()->GetCollectionMgr()->AddMount(spellId, MountStatusFlags::MOUNT_STATUS_NONE, false, false);
+    }
+
+    static bool Player_HasMount(Player* p, uint32 spellId)
+    {
+        if (!p || !p->GetSession() || !p->GetSession()->GetCollectionMgr())
+            return false;
+        auto const& mounts = p->GetSession()->GetCollectionMgr()->GetAccountMounts();
+        return mounts.find(spellId) != mounts.end();
+    }
+
+    static bool Player_AddToy(Player* p, uint32 itemId)
+    {
+        if (!p || !p->GetSession() || !p->GetSession()->GetCollectionMgr())
+            return false;
+        return p->GetSession()->GetCollectionMgr()->AddToy(itemId, false, false);
+    }
+
+    static bool Player_HasToy(Player* p, uint32 itemId)
+    {
+        if (!p || !p->GetSession() || !p->GetSession()->GetCollectionMgr())
+            return false;
+        return p->GetSession()->GetCollectionMgr()->HasToy(itemId);
+    }
+
+    static void Player_AddTransmogSet(Player* p, uint32 transmogSetId)
+    {
+        if (!p || !p->GetSession() || !p->GetSession()->GetCollectionMgr())
+            return;
+        p->GetSession()->GetCollectionMgr()->AddTransmogSet(transmogSetId);
+    }
+
     static void Player_CastSpellSelf(Player* p, uint32 spellId) { if (p) p->CastSpell(p, spellId, true); }
     static void Player_AddAura(Player* p, uint32 spellId, Unit* caster) { if (p && caster) p->AddAura(spellId, caster); }
     static void Player_RemoveAura(Player* p, uint32 spellId) { if (p) p->RemoveAura(spellId); }
@@ -214,6 +256,16 @@ namespace AngelScript
         // Spells
         r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpell(Unit@, uint32)", asFUNCTION(Player_CastSpell), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpellSelf(uint32)", asFUNCTION(Player_CastSpellSelf), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "bool LearnSpell(uint32)", asFUNCTION(Player_LearnSpell), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "bool HasSpell(uint32) const", asFUNCTION(Player_HasSpell), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetFreeInventorySlotCount() const", asFUNCTION(Player_GetFreeInventorySlotCount), asCALL_CDECL_OBJFIRST);
+
+        // CollectionMgr (BattlePay delivery)
+        r = _scriptEngine->RegisterObjectMethod("Player", "bool AddMount(uint32)", asFUNCTION(Player_AddMount), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "bool HasMount(uint32) const", asFUNCTION(Player_HasMount), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "bool AddToy(uint32)", asFUNCTION(Player_AddToy), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "bool HasToy(uint32) const", asFUNCTION(Player_HasToy), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void AddTransmogSet(uint32)", asFUNCTION(Player_AddTransmogSet), asCALL_CDECL_OBJFIRST);
 
         // XP
         r = _scriptEngine->RegisterObjectMethod("Player", "void GiveXP(uint32, Unit@)", asFUNCTION(Player_GiveXP), asCALL_CDECL_OBJFIRST);

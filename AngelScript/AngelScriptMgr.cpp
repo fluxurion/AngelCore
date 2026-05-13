@@ -61,6 +61,7 @@
 #include "API/ASDB2API.h"
 #include "API/ASWorldAPI.h"
 #include "API/ASUpdateFieldAPI.h"
+#include "API/ASBattlePayAPI.h"
 #include "API/ASSpawnAPI.h"
 #include "Dispatch/ASDispatch.h"
 #include <filesystem>
@@ -521,6 +522,57 @@ bool AngelScriptMgr::TriggerCustomHook_CharEnum(WorldSession* session, WorldPack
                 _context->GetExceptionLineNumber());
     }
     return false;
+}
+
+bool AngelScriptMgr::TriggerCustomHook_AuthResponse(WorldSession* session, uint32& currencyID)
+{
+    auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_AUTH_RESPONSE)];
+    for (auto& func : hooks)
+    {
+        if (!_context) break;
+        int r = _context->Prepare(func);
+        if (r < 0) continue;
+        _context->SetArgObject(0, session);
+        _context->SetArgDWord(1, currencyID);
+        r = _context->Execute();
+        if (r == asEXECUTION_FINISHED)
+        {
+            // Script can modify currencyID via reference
+            currencyID = _context->GetReturnDWord();
+        }
+        if (r == asEXECUTION_EXCEPTION)
+            TC_LOG_ERROR("server.angelscript", "[AS] AuthResponse EXCEPTION: {} at {}:{}",
+                _context->GetExceptionString(),
+                _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
+                _context->GetExceptionLineNumber());
+    }
+    return hooks.size() > 0;
+}
+
+bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType)
+{
+    auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN)];
+    for (auto& func : hooks)
+    {
+        if (!_context) break;
+        int r = _context->Prepare(func);
+        if (r < 0) continue;
+        _context->SetArgObject(0, session);
+        _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
+        _context->SetArgDWord(2, activeBoostType);
+        r = _context->Execute();
+        if (r == asEXECUTION_FINISHED)
+        {
+            // Script can modify both values via reference
+            bpayStoreAvailable = _context->GetReturnByte() != 0;
+        }
+        if (r == asEXECUTION_EXCEPTION)
+            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXCEPTION: {} at {}:{}",
+                _context->GetExceptionString(),
+                _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
+                _context->GetExceptionLineNumber());
+    }
+    return hooks.size() > 0;
 }
 
 bool AngelScriptMgr::TriggerCustomHook_GetLockedDungeons(Player* player, std::vector<uint32>& /*lockedDungeons*/)

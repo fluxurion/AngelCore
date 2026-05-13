@@ -30,6 +30,10 @@
 #include "Util.h"
 #include "World.h"
 
+#ifdef ANGELSCRIPT_INTEGRATION
+#include "AngelScript/AngelScriptMgr.h"
+#endif
+
 void WorldSession::SendAuthResponse(uint32 code, bool queued, uint32 queuePos)
 {
     WorldPackets::Auth::AuthResponse response;
@@ -59,6 +63,12 @@ void WorldSession::SendAuthResponse(uint32 code, bool queued, uint32 queuePos)
         // TEMPORARY - prevent creating characters in uncompletable zone
         // This has the side effect of disabling Exile's Reach choice clientside without actually forcing character templates
         response.SuccessInfo->ForceCharacterTemplate = DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, 2175 /*Exile's Reach*/, nullptr);
+
+#ifdef ANGELSCRIPT_INTEGRATION
+        // Allow AngelScript to modify CurrencyID for BattlePay store
+        if (AngelScript::AngelScriptMgr::instance()->IsEnabled())
+            AngelScript::AngelScriptMgr::instance()->TriggerCustomHook_AuthResponse(this, response.SuccessInfo->CurrencyID);
+#endif
     }
 
     if (queued)
@@ -139,6 +149,13 @@ void WorldSession::SendFeatureSystemStatusGlueScreen()
     }
 
     features.AvailableGameModeIDs.push_back(8); // GameMode.db2, standard
+
+#ifdef ANGELSCRIPT_INTEGRATION
+    // Allow AngelScript to modify BattlePay store settings from Config.as
+    if (AngelScript::AngelScriptMgr::instance()->IsEnabled())
+        AngelScript::AngelScriptMgr::instance()->TriggerCustomHook_FeatureSystemStatusGlueScreen(
+            this, features.BpayStoreAvailable, features.ActiveBoostType);
+#endif
 
     SendPacket(features.Write());
 
