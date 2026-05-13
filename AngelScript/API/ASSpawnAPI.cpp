@@ -1004,11 +1004,6 @@ namespace AngelScript
             asFUNCTION(Creature_SetEquipment), asCALL_CDECL_OBJFIRST);
         (void)r;
 
-        // ---- Creature methods — React State ----
-        r = engine->RegisterObjectMethod("Creature", "void SetReactState(uint8 state)",
-            asFUNCTION(Creature_SetReactState), asCALL_CDECL_OBJFIRST);
-        (void)r;
-
         // ---- Creature methods — Phase ----
         r = engine->RegisterObjectMethod("Creature", "void AddPhase(uint32 phaseId)",
             asFUNCTION(Creature_AddPhase), asCALL_CDECL_OBJFIRST);
