@@ -61,7 +61,6 @@
 #include "API/ASDB2API.h"
 #include "API/ASWorldAPI.h"
 #include "API/ASUpdateFieldAPI.h"
-#include "API/ASBattlePayAPI.h"
 #include "API/ASSpawnAPI.h"
 #include "Dispatch/ASDispatch.h"
 #include <filesystem>
