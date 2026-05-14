@@ -156,6 +156,7 @@ namespace AngelScript
     static uint16 Player_GetSkillValue(Player* p, uint32 skillId) { return p ? p->GetSkillValue(skillId) : 0; }
     static void Player_SendAreaTriggerMessage(Player* p, const std::string& msg) { if (p && p->GetSession()) p->GetSession()->SendNotification("%s", msg.c_str()); }
     static void Player_UpdateZone(Player* p, uint32 newZone, uint32 newArea) { if (p) p->UpdateZone(newZone, newArea); }
+    static void Player_AddMoney(Player* p, uint64 amount) { if (p) p->ModifyMoney(int64(amount)); }
 
     // Cast methods — critical for type dispatch
     static Creature* Player_ToCreature(Player* /*p*/) { return nullptr; } // Player cannot be creature
@@ -221,6 +222,7 @@ namespace AngelScript
         // Money
         r = _scriptEngine->RegisterObjectMethod("Player", "uint64 GetMoney() const", asFUNCTION(Player_GetMoney), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "bool ModifyMoney(int64)", asFUNCTION(Player_ModifyMoney), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void AddMoney(uint64)", asFUNCTION(Player_AddMoney), asCALL_CDECL_OBJFIRST);
 
         // Inventory
         r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetItemCount(uint32, bool) const", asFUNCTION(Player_GetItemCount), asCALL_CDECL_OBJFIRST);

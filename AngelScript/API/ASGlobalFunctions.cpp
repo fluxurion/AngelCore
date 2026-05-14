@@ -22,6 +22,7 @@
 #undef OPTIONAL
 
 #include <angelscript.h>
+#include "../SDK/add_on/scriptarray/scriptarray.h"
 
 #pragma pop_macro("OPTIONAL")
 #pragma pop_macro("OUT")
@@ -261,11 +262,50 @@ namespace AngelScript
         TC_LOG_INFO("server.angelscript", "Math API registered");
     }
 
-    void RegisterStringAPI(asIScriptEngine* /*_scriptEngine*/)
+    // ---- String split utility for BattlePay ----
+    static CScriptArray* String_Split(const std::string& str, const std::string& delimiter)
     {
-        // AngelScript's built-in string type is already registered by the stdstring add-on
-        // Just register any extra string utility functions if needed
-        TC_LOG_INFO("server.angelscript", "String API registered (using built-in std::string)");
+        asIScriptContext* ctx = asGetActiveContext();
+        asIScriptEngine* engine = ctx ? ctx->GetEngine() : nullptr;
+        if (!engine) return nullptr;
+        
+        asITypeInfo* arrayType = engine->GetTypeInfoByDecl("array<string>");
+        CScriptArray* arr = CScriptArray::Create(arrayType);
+        
+        if (str.empty()) return arr;
+        
+        size_t start = 0;
+        size_t end = str.find(delimiter);
+        while (end != std::string::npos)
+        {
+            arr->Resize(arr->GetSize() + 1);
+            std::string token = str.substr(start, end - start);
+            ((std::string*)arr->At(arr->GetSize() - 1))->assign(token);
+            start = end + delimiter.length();
+            end = str.find(delimiter, start);
+        }
+        arr->Resize(arr->GetSize() + 1);
+        ((std::string*)arr->At(arr->GetSize() - 1))->assign(str.substr(start));
+        
+        return arr;
+    }
+
+    // ---- Time utilities ----
+    static uint32 Global_GetUnixTime()
+    {
+        return uint32(GameTime::GetGameTime());
+    }
+
+    void RegisterStringAPI(asIScriptEngine* _scriptEngine)
+    {
+        // Register string split method
+        _scriptEngine->RegisterObjectMethod("string", "array<string>@ split(const string &in) const", 
+            asFUNCTION(String_Split), asCALL_CDECL_OBJFIRST);
+        
+        // Register global time function
+        _scriptEngine->RegisterGlobalFunction("uint32 GetUnixTime()", asFUNCTION(Global_GetUnixTime), asCALL_CDECL);
+        
+        TC_LOG_INFO("server.angelscript", "String API registered (with split method)");
     }
 
 } // namespace AngelScript

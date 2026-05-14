@@ -357,6 +357,10 @@ bool AngelScriptMgr::LoadScripts()
         std::string relPath = fs::relative(e.path(), _scriptPath).string();
         if (relPath.find("examples/") == 0 || relPath.find("examples\\") == 0)
             continue;
+        // Skip files with "example" in the name (e.g., quest_encounter_example.as)
+        std::string filename = e.path().filename().string();
+        if (filename.find("example") != std::string::npos)
+            continue;
         CompileScript(e.path().string(), fs::relative(e.path(),_scriptPath).string()) ? ok++ : fail++;
     }
     TC_LOG_INFO("server.loading", ">> AngelScript: compiled {} script(s), {} failed", ok, fail);

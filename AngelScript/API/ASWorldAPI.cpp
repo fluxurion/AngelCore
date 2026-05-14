@@ -332,6 +332,7 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("bool GetWorldBoolConfig(uint32)", asFUNCTION(World_GetBoolConfig), asCALL_CDECL);
 
         // ---- Object Accessor ----
+        r = _scriptEngine->RegisterGlobalFunction("Player@ GetPlayerByName(const string& in)", asFUNCTION(FindPlayerByName), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("Creature@ GetCreatureByGuid(Unit@, uint64)", asFUNCTION(GetCreatureByGuid), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("GameObject@ GetGameObjectByGuid(Unit@, uint64)", asFUNCTION(GetGameObjectByGuid), asCALL_CDECL);
 
@@ -340,10 +341,16 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("void RegisterSendPlayerChoiceHook(int, ScriptCallback@)", asFUNCTION(RegisterCustomHook_SendPlayerChoice), asCALL_CDECL);
         // GetLockedDungeons hook: bool OnGetLockedDungeons(Player@)
         r = _scriptEngine->RegisterGlobalFunction("void RegisterGetLockedDungeonsHook(int, ScriptCallback@)", asFUNCTION(RegisterCustomHook_SendPlayerChoice), asCALL_CDECL);
-        // AuthResponse hook: uint32 OnAuthResponse(WorldSession@, uint32 currencyID) - returns modified currencyID
-        r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(ScriptCallback@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
-        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(WorldSession@, bool bpayStoreAvailable, int32 activeBoostType)
-        r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(ScriptCallback@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
+        
+        // ---- BattlePay Hook Funcdefs ----
+        // AuthResponse hook: uint32 OnAuthResponse(uint32 sessionID, uint32 currencyID)
+        r = _scriptEngine->RegisterFuncdef("uint32 AuthResponseHook(uint32, uint32)");
+        if (r >= 0 || r == asALREADY_REGISTERED)
+            r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(AuthResponseHook@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
+        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(uint32 sessionID, bool bpayStoreAvailable, int32 activeBoostType)
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32)");
+        if (r >= 0 || r == asALREADY_REGISTERED)
+            r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "World API registered (phase, summon, ObjectMgr, update fields, hook points)");
     }
