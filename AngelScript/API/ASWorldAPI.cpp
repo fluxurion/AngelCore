@@ -343,12 +343,12 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("void RegisterGetLockedDungeonsHook(int, ScriptCallback@)", asFUNCTION(RegisterCustomHook_SendPlayerChoice), asCALL_CDECL);
         
         // ---- BattlePay Hook Funcdefs ----
-        // AuthResponse hook: uint32 OnAuthResponse(uint32 sessionID, uint32 currencyID)
-        r = _scriptEngine->RegisterFuncdef("uint32 AuthResponseHook(uint32, uint32)");
+        // AuthResponse hook: uint32 OnAuthResponse(WorldSession@ session, uint32 currencyID)
+        r = _scriptEngine->RegisterFuncdef("uint32 AuthResponseHook(WorldSession@, uint32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(AuthResponseHook@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
-        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(uint32 sessionID, bool bpayStoreAvailable, int32 activeBoostType)
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32)");
+        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(WorldSession@ session, bool bpayStoreAvailable, int32 activeBoostType)
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(WorldSession@, bool, int32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
 
