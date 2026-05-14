@@ -159,13 +159,18 @@ void WorldSession::SendFeatureSystemStatusGlueScreen()
 
     SendPacket(features.Write());
 
+#ifdef ANGELSCRIPT_INTEGRATION
+    std::string_view bpayEnabled = features.BpayStoreAvailable ? "1"sv : "0"sv;
+#else
+    std::string_view bpayEnabled = "0"sv;
+#endif
     WorldPackets::System::MirrorVarSingle vars[] =
     {
         { "raidLockoutExtendEnabled"sv, "1"sv },
         { "sellAllJunkEnabled"sv, "1"sv },
         { "bypassItemLevelScalingCode"sv, "0"sv },
-        { "shop2Enabled"sv, "0"sv },
-        { "bpayStoreEnable"sv, "0"sv },
+        { "shop2Enabled"sv, bpayEnabled },
+        { "bpayStoreEnable"sv, bpayEnabled },
         { "recentAlliesEnabledClient"sv, "0"sv },
         { "browserEnabled"sv, "0"sv },
         { "housingEnableCreateGuildNeighborhood"sv, "0"sv },
