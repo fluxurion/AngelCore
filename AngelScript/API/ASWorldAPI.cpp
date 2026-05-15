@@ -344,11 +344,13 @@ namespace AngelScript
         
         // ---- BattlePay Hook Funcdefs ----
         // AuthResponse hook: uint32 OnAuthResponse(WorldSession@ session, uint32 currencyID)
-        r = _scriptEngine->RegisterFuncdef("uint32 AuthResponseHook(WorldSession@, uint32)");
+        // NOTE: After next recompile, change to WorldSession@ to allow session access in AS
+        r = _scriptEngine->RegisterFuncdef("uint32 AuthResponseHook(uint32, uint32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(AuthResponseHook@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
         // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(WorldSession@ session, bool bpayStoreAvailable, int32 activeBoostType)
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(WorldSession@, bool, int32)");
+        // NOTE: After next recompile, change to WorldSession@ to allow session access in AS
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
 

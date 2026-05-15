@@ -535,7 +535,7 @@ bool AngelScriptMgr::TriggerCustomHook_AuthResponse(WorldSession* session, uint3
         if (!_context) break;
         int r = _context->Prepare(func);
         if (r < 0) continue;
-        _context->SetArgObject(0, session);
+        _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgDWord(1, currencyID);
         r = _context->Execute();
         if (r == asEXECUTION_FINISHED)
@@ -560,9 +560,9 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
         if (!_context) break;
         int r = _context->Prepare(func);
         if (r < 0) continue;
-        _context->SetArgObject(0, session);
+        _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
-        _context->SetArgDWord(2, activeBoostType);
+        _context->SetArgDWord(2, static_cast<uint32>(activeBoostType));
         r = _context->Execute();
         if (r == asEXECUTION_FINISHED)
         {
