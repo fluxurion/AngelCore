@@ -49,7 +49,7 @@ namespace AngelScript
         WorldPacket pkt(static_cast<OpcodeServer>(pd->opcode));
         if (!pd->data.empty())
             pkt.append(pd->data.data(), pd->data.size());
-        s->SendPacket(&pkt);
+        s->SendPacket(&pkt, true);
     }
 
     // ---- OpcodeHandler registration (script -> C++ bridge) ----
@@ -246,7 +246,7 @@ namespace AngelScript
         WorldPacket packet(static_cast<OpcodeServer>(pd->opcode), pd->data.size());
         if (!pd->data.empty())
             packet.append(pd->data.data(), pd->data.size());
-        player->GetSession()->SendPacket(&packet);
+        player->GetSession()->SendPacket(&packet, true);
     }
 
     // ---- PacketData factory ----
