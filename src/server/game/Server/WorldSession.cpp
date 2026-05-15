@@ -494,6 +494,10 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
                     break;
                 }
                 case STATUS_IGNORED:
+#ifdef ANGELSCRIPT_INTEGRATION
+                    if (sAngelScriptMgr->IsEnabled())
+                        sAngelScriptMgr->TriggerPacketReceive(this, *packet, packet->GetOpcode());
+#endif
                     break;
             }
         }
