@@ -207,6 +207,7 @@ namespace AngelScript
         bool TriggerCustomHook_CharEnum(WorldSession* session, WorldPackets::Character::EnumCharactersResult& enumResult);
         bool TriggerCustomHook_AuthResponse(WorldSession* session, uint32& currencyID);
         bool TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType);
+        bool TriggerCustomHook_FeatureSystemStatus(WorldSession* session, bool& bpayStoreAvailable);
         void TriggerCustomHook_SessionInitialized(WorldSession* session);
 
         // Per-entry AI dispatch — called from Dispatch/ CreatureScript/GameObjectScript

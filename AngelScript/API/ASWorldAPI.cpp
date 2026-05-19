@@ -248,6 +248,11 @@ namespace AngelScript
         sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN, func);
     }
 
+    static void RegisterCustomHook_FeatureSystemStatus(asIScriptFunction* func)
+    {
+        sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_FEATURE_SYSTEM_STATUS, func);
+    }
+
     // ========================================================================
     // Registration
     // ========================================================================
@@ -353,6 +358,10 @@ namespace AngelScript
         r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
+        // FeatureSystemStatus hook: bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable)
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusHook(uint32, bool)");
+        if (r >= 0 || r == asALREADY_REGISTERED)
+            r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusHook(FeatureSystemStatusHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatus), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "World API registered (phase, summon, ObjectMgr, update fields, hook points)");
     }

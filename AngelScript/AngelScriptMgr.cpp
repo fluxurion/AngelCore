@@ -580,6 +580,31 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
     return hooks.size() > 0;
 }
 
+bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session, bool& bpayStoreAvailable)
+{
+    auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_FEATURE_SYSTEM_STATUS)];
+    for (auto& func : hooks)
+    {
+        if (!_context) break;
+        int r = _context->Prepare(func);
+        if (r < 0) continue;
+        _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
+        _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
+        r = _context->Execute();
+        if (r == asEXECUTION_FINISHED)
+        {
+            // Script can modify BpayStoreAvailable via return value
+            bpayStoreAvailable = _context->GetReturnByte() != 0;
+        }
+        if (r == asEXECUTION_EXCEPTION)
+            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatus EXCEPTION: {} at {}:{}",
+                _context->GetExceptionString(),
+                _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
+                _context->GetExceptionLineNumber());
+    }
+    return hooks.size() > 0;
+}
+
 bool AngelScriptMgr::TriggerCustomHook_GetLockedDungeons(Player* player, std::vector<uint32>& /*lockedDungeons*/)
 {
     auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_GET_LOCKED_DUNGEONS)];

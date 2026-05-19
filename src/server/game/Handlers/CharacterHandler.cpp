@@ -1576,6 +1576,13 @@ void WorldSession::SendFeatureSystemStatus()
     features.GroupChatThrottle.UsedTriesPerMessage = 1;
     features.GroupChatThrottle.TriesRestoredPerSecond = 20;
 
+#ifdef ANGELSCRIPT_INTEGRATION
+    // Allow AngelScript to modify BattlePay store settings from Config.as
+    if (AngelScript::AngelScriptMgr::instance()->IsEnabled())
+        AngelScript::AngelScriptMgr::instance()->TriggerCustomHook_FeatureSystemStatus(
+            this, features.BpayStoreAvailable);
+#endif
+
     SendPacket(features.Write());
 }
 
