@@ -1447,6 +1447,12 @@ void WorldSession::InitializeSessionCallback(LoginDatabaseQueryHolder const& hol
 
     _battlePetMgr->LoadFromDB(holder.GetPreparedResult(AccountInfoQueryHolder::BATTLE_PETS),
                               holder.GetPreparedResult(AccountInfoQueryHolder::BATTLE_PET_SLOTS));
+
+#ifdef ANGELSCRIPT_INTEGRATION
+    // Allow AngelScript to send post-initialization packets (e.g., SMSG_DISPLAY_PROMOTION)
+    if (sAngelScriptMgr->IsEnabled())
+        sAngelScriptMgr->TriggerCustomHook_SessionInitialized(this);
+#endif
 }
 
 rbac::RBACData* WorldSession::GetRBACData()

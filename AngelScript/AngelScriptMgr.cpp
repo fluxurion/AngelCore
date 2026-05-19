@@ -187,6 +187,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterFuncdef("void PlayerPlayerCallback(Player@, Player@)");
     _scriptEngine->RegisterFuncdef("void StringCallback(string &in)");
     _scriptEngine->RegisterFuncdef("void CharEnumCallback(WorldSession@, EnumCharactersResult@)");
+    _scriptEngine->RegisterFuncdef("void SessionInitializedCallback(WorldSession@)");
 
     RegisterPlayerAPI(); RegisterCreatureAPI(); RegisterGameObjectAPI(); RegisterUnitAPI();
     RegisterSpellAPI(); RegisterAuraAPI(); RegisterPacketAPI(); RegisterDatabaseAPI(); RegisterGossipAPI();
@@ -208,6 +209,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterAuraCalcAmountHook(uint32, AuraCalcAmountCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_AURA_CALC_AMOUNT, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPlayerHook(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterCharEnumHook(CharEnumCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_CHAR_ENUM, f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterSessionInitializedHook(SessionInitializedCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_SESSION_INITIALIZED, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterInstanceScript(int, PlayerCallback@)",     asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterInstanceScript(static_cast<InstanceHookType>(t), f); }), asCALL_CDECL);
 
     // Creature callbacks
@@ -880,6 +882,25 @@ void AngelScriptMgr::TriggerCreatureGossipHello(Creature* c, Player* /*p*/) { Tr
 void AngelScriptMgr::TriggerCreatureGossipSelect(Creature* c, Player* /*p*/, uint32 /*s*/, uint32 /*a*/) { TriggerCreatureHook(CreatureHookType::ON_GOSSIP_SELECT,c); }
 void AngelScriptMgr::TriggerGameObjectGossipHello(GameObject* g, Player* /*p*/) { TriggerGameObjectHook(GameObjectHookType::ON_GOSSIP_HELLO,g); }
 void AngelScriptMgr::TriggerGameObjectGossipSelect(GameObject* g, Player* /*p*/, uint32 /*s*/, uint32 /*a*/) { TriggerGameObjectHook(GameObjectHookType::ON_GOSSIP_SELECT,g); }
+
+void AngelScriptMgr::TriggerCustomHook_SessionInitialized(WorldSession* session)
+{
+    if (!session) return;
+    auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_SESSION_INITIALIZED)];
+    for (auto& func : hooks)
+    {
+        if (!_context) break;
+        int r = _context->Prepare(func);
+        if (r < 0) continue;
+        _context->SetArgObject(0, session);
+        r = _context->Execute();
+        if (r == asEXECUTION_EXCEPTION)
+            TC_LOG_ERROR("server.angelscript", "[AS] SessionInitialized EXCEPTION: {} at {}:{}",
+                _context->GetExceptionString(),
+                _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
+                _context->GetExceptionLineNumber());
+    }
+}
 
 } // namespace AngelScript
 #endif // ANGELSCRIPT_INTEGRATION

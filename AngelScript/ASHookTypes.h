@@ -267,6 +267,7 @@ namespace AngelScript
         ON_CHAR_ENUM,              // After char enum packet is built; script can append warband groups and send
         ON_AUTH_RESPONSE,          // Before auth response sent; script can modify CurrencyID
         ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN, // Before glue screen features sent; script can modify BpayStoreAvailable and ActiveBoostType
+        ON_SESSION_INITIALIZED,    // After WorldSession::InitializeSessionCallback completes; session is ready on char screen
         COUNT
     };
 
