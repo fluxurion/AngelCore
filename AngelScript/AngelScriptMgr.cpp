@@ -554,7 +554,7 @@ bool AngelScriptMgr::TriggerCustomHook_AuthResponse(WorldSession* session, uint3
     return hooks.size() > 0;
 }
 
-bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType)
+bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds, int32& contentSetID)
 {
     auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN)];
     for (auto& func : hooks)
@@ -565,11 +565,18 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
         _context->SetArgDWord(2, static_cast<uint32>(activeBoostType));
+        _context->SetArgByte(3, commerceServerEnabled ? 1 : 0);
+        _context->SetArgDWord(4, commercePricePollTimeSeconds);
+        _context->SetArgDWord(5, static_cast<uint32>(contentSetID));
         r = _context->Execute();
         if (r == asEXECUTION_FINISHED)
         {
-            // Script can modify both values via reference
+            // Script can modify bpayStoreAvailable via return value
             bpayStoreAvailable = _context->GetReturnByte() != 0;
+            // Script can modify other values via reference parameters
+            commerceServerEnabled = _context->GetArgByte(3) != 0;
+            commercePricePollTimeSeconds = _context->GetArgDWord(4);
+            contentSetID = static_cast<int32>(_context->GetArgDWord(5));
         }
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXCEPTION: {} at {}:{}",
@@ -580,7 +587,7 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
     return hooks.size() > 0;
 }
 
-bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session, bool& bpayStoreAvailable)
+bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session, bool& bpayStoreAvailable, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds)
 {
     auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_FEATURE_SYSTEM_STATUS)];
     for (auto& func : hooks)
@@ -590,11 +597,16 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session
         if (r < 0) continue;
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
+        _context->SetArgByte(2, commerceServerEnabled ? 1 : 0);
+        _context->SetArgDWord(3, commercePricePollTimeSeconds);
         r = _context->Execute();
         if (r == asEXECUTION_FINISHED)
         {
-            // Script can modify BpayStoreAvailable via return value
+            // Script can modify bpayStoreAvailable via return value
             bpayStoreAvailable = _context->GetReturnByte() != 0;
+            // Script can modify other values via reference parameters
+            commerceServerEnabled = _context->GetArgByte(2) != 0;
+            commercePricePollTimeSeconds = _context->GetArgDWord(3);
         }
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatus EXCEPTION: {} at {}:{}",

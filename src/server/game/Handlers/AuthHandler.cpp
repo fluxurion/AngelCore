@@ -124,6 +124,9 @@ void WorldSession::SendFeatureSystemStatusGlueScreen()
     features.MaxCharactersOnThisRealm = sWorld->getIntConfig(CONFIG_CHARACTERS_PER_REALM);
     features.MinimumExpansionLevel = EXPANSION_CLASSIC;
     features.MaximumExpansionLevel = sWorld->getIntConfig(CONFIG_EXPANSION);
+    features.ContentSetID = sWorld->getIntConfig(CONFIG_EXPANSION);
+    features.CommerceServerEnabled = false;
+    features.CommercePricePollTimeSeconds = 0;
 
     features.EuropaTicketSystemStatus.emplace();
     features.EuropaTicketSystemStatus->ThrottleState.MaxTries = 10;
@@ -154,7 +157,7 @@ void WorldSession::SendFeatureSystemStatusGlueScreen()
     // Allow AngelScript to modify BattlePay store settings from Config.as
     if (AngelScript::AngelScriptMgr::instance()->IsEnabled())
         AngelScript::AngelScriptMgr::instance()->TriggerCustomHook_FeatureSystemStatusGlueScreen(
-            this, features.BpayStoreAvailable, features.ActiveBoostType);
+            this, features.BpayStoreAvailable, features.ActiveBoostType, features.CommerceServerEnabled, features.CommercePricePollTimeSeconds, features.ContentSetID);
 #endif
 
     SendPacket(features.Write());

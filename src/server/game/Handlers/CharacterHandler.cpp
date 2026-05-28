@@ -1580,7 +1580,7 @@ void WorldSession::SendFeatureSystemStatus()
     // Allow AngelScript to modify BattlePay store settings from Config.as
     if (AngelScript::AngelScriptMgr::instance()->IsEnabled())
         AngelScript::AngelScriptMgr::instance()->TriggerCustomHook_FeatureSystemStatus(
-            this, features.BpayStoreAvailable);
+            this, features.BpayStoreAvailable, features.CommerceServerEnabled, features.CommercePricePollTimeSeconds);
 #endif
 
     SendPacket(features.Write());

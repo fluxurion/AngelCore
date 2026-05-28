@@ -10,7 +10,7 @@
 
 // IngameShop.Enabled - Enable the shop in the charscreen and ingame
 // Default: 0 (Disabled), 1 (Enabled)
-bool CONFIG_BPAY_STORE_ENABLED = false;
+bool CONFIG_BPAY_STORE_ENABLED = true;
 
 // IngameShop.Currency - Payment currency ID
 // 1=USD, 2=GBP, 3=BattleCoins, 4=EUR, 5=RUB, 8=ARS, 9=CLP, 10=MXN, 11=BRL, 
@@ -21,6 +21,22 @@ uint32 CONFIG_BPAY_STORE_CURRENCY = 3;
 // Character.Upgrade.BoostType - Value sent in SendFeatureSystemStatusGlueScreen
 // Default: 6 (Dragonflight level boost)
 uint32 CONFIG_CHARACTER_UPGRADE_BOOST_TYPE = 6;
+
+// CommerceServerEnabled - Enable commerce server for shop functionality
+// Required for C_CatalogShop fetch to succeed
+// Default: true
+bool CONFIG_BPAY_COMMERCE_SERVER_ENABLED = true;
+
+// CommercePricePollTimeSeconds - Price polling interval in seconds
+// Retail uses 60000 (16.6 hours) on glue screen, 300 (5 minutes) in-game
+// Default: 60000 (glue screen), 300 (in-world)
+uint32 CONFIG_BPAY_COMMERCE_PRICE_POLL_SECONDS = 60000;
+uint32 CONFIG_BPAY_COMMERCE_PRICE_POLL_SECONDS_INGAME = 300;
+
+// ContentSetID - Currently active Classic season/expansion
+// Should match CONFIG_EXPANSION from world config
+// Default: 11 (The War Within)
+int32 CONFIG_BPAY_CONTENT_SET_ID = 11;
 
 // CatchUpRequiredDays - Days of logout required for gear catch-up eligibility
 // Set to 0 to allow anytime
