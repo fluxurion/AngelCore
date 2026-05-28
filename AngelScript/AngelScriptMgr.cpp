@@ -557,18 +557,23 @@ bool AngelScriptMgr::TriggerCustomHook_AuthResponse(WorldSession* session, uint3
 bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds, int32& contentSetID)
 {
     auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN)];
-    TC_LOG_DEBUG("server.angelscript", "[AS] FeatureSystemStatusGlueScreen trigger called — {} hook(s) registered, context={}", hooks.size(), (void*)_context);
+    TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue trigger called — {} hook(s) registered, context={} state={}",
+        hooks.size(), (void*)_context, _context ? _context->GetState() : -1);
     for (auto& func : hooks)
     {
         if (!_context)
         {
-            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen — _context is null, breaking");
+            TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue — _context is null, breaking");
             break;
         }
+        int stateBeforePrepare = _context->GetState();
         int r = _context->Prepare(func);
+        int stateAfterPrepare = _context->GetState();
+        TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue Prepare(func={}) returned r={}, stateBefore={}, stateAfter={}",
+            (void*)func, r, stateBeforePrepare, stateAfterPrepare);
         if (r < 0)
         {
-            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen — Prepare() returned {} (func={})", r, (void*)func);
+            TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue — Prepare() returned {} (func={})", r, (void*)func);
             continue;
         }
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
@@ -578,6 +583,8 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
         _context->SetArgDWord(4, commercePricePollTimeSeconds);
         _context->SetArgDWord(5, static_cast<uint32>(contentSetID));
         r = _context->Execute();
+        int stateAfterExecute = _context->GetState();
+        TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue Execute returned r={}, stateAfter={}", r, stateAfterExecute);
         if (r == asEXECUTION_FINISHED)
         {
             // Script can modify bpayStoreAvailable via return value
@@ -587,16 +594,32 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
             commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(3));
             commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(4));
             contentSetID = *reinterpret_cast<int32*>(_context->GetAddressOfArg(5));
-            TC_LOG_DEBUG("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXECUTED — retByte={}, bpayStoreAvailable={}, commerceServer={}, pricePoll={}, contentSet={}",
+            TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue EXECUTED OK — retByte={}, bpayStoreAvailable={}, commerceServer={}, pricePoll={}, contentSet={}",
                 (int)retByte, bpayStoreAvailable, commerceServerEnabled, commercePricePollTimeSeconds, contentSetID);
         }
+        else if (r == asEXECUTION_SUSPENDED)
+        {
+            TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue — Execute() returned asEXECUTION_SUSPENDED ({}); attempting resume", r);
+            // Try resuming — simple hook shouldn't suspend, but try anyway
+            int r2 = _context->Execute();
+            TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue resume attempt returned r2={}, stateAfter={}", r2, _context->GetState());
+            if (r2 == asEXECUTION_FINISHED)
+            {
+                uint8 retByte = _context->GetReturnByte();
+                bpayStoreAvailable = retByte != 0;
+                commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(3));
+                commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(4));
+                contentSetID = *reinterpret_cast<int32*>(_context->GetAddressOfArg(5));
+                TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue RESUMED OK — retByte={}, bpayStoreAvailable={}", (int)retByte, bpayStoreAvailable);
+            }
+        }
         else if (r == asEXECUTION_EXCEPTION)
-            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXCEPTION: {} at {}:{}",
+            TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue EXCEPTION: {} at {}:{}",
                 _context->GetExceptionString(),
                 _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
                 _context->GetExceptionLineNumber());
         else
-            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen — Execute() returned unexpected code: {}", r);
+            TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue — Execute() returned unexpected code: {} (state after: {})", r, stateAfterExecute);
     }
     return hooks.size() > 0;
 }
