@@ -576,12 +576,12 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
             TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue — Prepare() returned {} (func={})", r, (void*)func);
             continue;
         }
+        // Set input-only parameters (not &out)
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
         _context->SetArgDWord(2, static_cast<uint32>(activeBoostType));
-        _context->SetArgByte(3, commerceServerEnabled ? 1 : 0);
-        _context->SetArgDWord(4, commercePricePollTimeSeconds);
-        _context->SetArgDWord(5, static_cast<uint32>(contentSetID));
+        // &out params (3=bool, 4=uint32, 5=int32) do NOT need initial values —
+        // setting them caused asEXECUTION_ERROR in AS 2.38.0
         r = _context->Execute();
         int stateAfterExecute = _context->GetState();
         TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue Execute returned r={}, stateAfter={}", r, stateAfterExecute);
@@ -634,8 +634,6 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session
         if (r < 0) continue;
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
-        _context->SetArgByte(2, commerceServerEnabled ? 1 : 0);
-        _context->SetArgDWord(3, commercePricePollTimeSeconds);
         r = _context->Execute();
         if (r == asEXECUTION_FINISHED)
         {
