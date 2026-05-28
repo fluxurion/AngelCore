@@ -557,11 +557,20 @@ bool AngelScriptMgr::TriggerCustomHook_AuthResponse(WorldSession* session, uint3
 bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds, int32& contentSetID)
 {
     auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN)];
+    TC_LOG_DEBUG("server.angelscript", "[AS] FeatureSystemStatusGlueScreen trigger called — {} hook(s) registered, context={}", hooks.size(), (void*)_context);
     for (auto& func : hooks)
     {
-        if (!_context) break;
+        if (!_context)
+        {
+            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen — _context is null, breaking");
+            break;
+        }
         int r = _context->Prepare(func);
-        if (r < 0) continue;
+        if (r < 0)
+        {
+            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen — Prepare() returned {} (func={})", r, (void*)func);
+            continue;
+        }
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
         _context->SetArgDWord(2, static_cast<uint32>(activeBoostType));
@@ -572,17 +581,22 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
         if (r == asEXECUTION_FINISHED)
         {
             // Script can modify bpayStoreAvailable via return value
-            bpayStoreAvailable = _context->GetReturnByte() != 0;
+            uint8 retByte = _context->GetReturnByte();
+            bpayStoreAvailable = retByte != 0;
             // Script can modify other values via reference parameters
             commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(3));
             commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(4));
             contentSetID = *reinterpret_cast<int32*>(_context->GetAddressOfArg(5));
+            TC_LOG_DEBUG("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXECUTED — retByte={}, bpayStoreAvailable={}, commerceServer={}, pricePoll={}, contentSet={}",
+                (int)retByte, bpayStoreAvailable, commerceServerEnabled, commercePricePollTimeSeconds, contentSetID);
         }
-        if (r == asEXECUTION_EXCEPTION)
+        else if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXCEPTION: {} at {}:{}",
                 _context->GetExceptionString(),
                 _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
                 _context->GetExceptionLineNumber());
+        else
+            TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen — Execute() returned unexpected code: {}", r);
     }
     return hooks.size() > 0;
 }
