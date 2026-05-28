@@ -574,9 +574,9 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
             // Script can modify bpayStoreAvailable via return value
             bpayStoreAvailable = _context->GetReturnByte() != 0;
             // Script can modify other values via reference parameters
-            commerceServerEnabled = _context->GetArgByte(3) != 0;
-            commercePricePollTimeSeconds = _context->GetArgDWord(4);
-            contentSetID = static_cast<int32>(_context->GetArgDWord(5));
+            commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(3));
+            commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(4));
+            contentSetID = *reinterpret_cast<int32*>(_context->GetAddressOfArg(5));
         }
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatusGlueScreen EXCEPTION: {} at {}:{}",
@@ -605,8 +605,8 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session
             // Script can modify bpayStoreAvailable via return value
             bpayStoreAvailable = _context->GetReturnByte() != 0;
             // Script can modify other values via reference parameters
-            commerceServerEnabled = _context->GetArgByte(2) != 0;
-            commercePricePollTimeSeconds = _context->GetArgDWord(3);
+            commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(2));
+            commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(3));
         }
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatus EXCEPTION: {} at {}:{}",
