@@ -155,7 +155,7 @@ namespace AngelScript
     {
         std::lock_guard<std::mutex> lock(_mutex);
 
-        if (_mysql)
+        if ((MYSQL*)_mysql)
         {
             TC_LOG_WARN("server.angelscript", "[AngelDB] Already initialized, reconnecting...");
             ShutdownInternal();
@@ -175,26 +175,26 @@ namespace AngelScript
             return true;
 
         // If the database doesn't exist, create it and reconnect
-        unsigned int lastErr = mysql_errno(_mysql);
+        unsigned int lastErr = mysql_errno((MYSQL*)_mysql);
         if (lastErr == 1049)  // ER_BAD_DB_ERROR: Unknown database
         {
             TC_LOG_INFO("server.angelscript",
                 "[AngelDB] Database '{}' does not exist — creating...", dbName);
 
             // Close failed connection
-            mysql_close(_mysql);
+            mysql_close((MYSQL*)_mysql);
             _mysql = nullptr;
 
             // Connect without a specific database (use 'mysql' system DB)
             _mysql = mysql_init(nullptr);
-            if (!_mysql) return false;
+            if (!(MYSQL*)_mysql) return false;
 
             unsigned int timeout = 10;
-            mysql_options(_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
-            mysql_options(_mysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+            mysql_options((MYSQL*)_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
+            mysql_options((MYSQL*)_mysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 
             MYSQL* conn = mysql_real_connect(
-                _mysql, host.c_str(), user.c_str(), pass.c_str(),
+                (MYSQL*)_mysql, host.c_str(), user.c_str(), pass.c_str(),
                 nullptr,  // no database
                 portNum, nullptr, 0);
 
@@ -202,8 +202,8 @@ namespace AngelScript
             {
                 TC_LOG_ERROR("server.angelscript",
                     "[AngelDB] Cannot connect to MySQL server (no DB): {}",
-                    mysql_error(_mysql));
-                mysql_close(_mysql);
+                    mysql_error((MYSQL*)_mysql));
+                mysql_close((MYSQL*)_mysql);
                 _mysql = nullptr;
                 return false;
             }
@@ -213,11 +213,11 @@ namespace AngelScript
                 "CREATE DATABASE IF NOT EXISTS `" + dbName +
                 "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
 
-            if (mysql_query(_mysql, createSQL.c_str()) != 0)
+            if (mysql_query((MYSQL*)_mysql, createSQL.c_str()) != 0)
             {
                 TC_LOG_ERROR("server.angelscript",
-                    "[AngelDB] CREATE DATABASE failed: {}", mysql_error(_mysql));
-                mysql_close(_mysql);
+                    "[AngelDB] CREATE DATABASE failed: {}", mysql_error((MYSQL*)_mysql));
+                mysql_close((MYSQL*)_mysql);
                 _mysql = nullptr;
                 return false;
             }
@@ -226,7 +226,7 @@ namespace AngelScript
                 "[AngelDB] Database '{}' created successfully", dbName);
 
             // Close the no-DB connection
-            mysql_close(_mysql);
+            mysql_close((MYSQL*)_mysql);
             _mysql = nullptr;
 
             // Reconnect with the new database
@@ -237,8 +237,8 @@ namespace AngelScript
         TC_LOG_ERROR("server.angelscript",
             "[AngelDB] Connection failed: {}@{}:{}/{} — {}",
             user, host, portNum, dbName,
-            _mysql ? mysql_error(_mysql) : "unknown");
-        if (_mysql) { mysql_close(_mysql); _mysql = nullptr; }
+            (MYSQL*)_mysql ? mysql_error((MYSQL*)_mysql) : "unknown");
+        if ((MYSQL*)_mysql) { mysql_close((MYSQL*)_mysql); _mysql = nullptr; }
         return false;
     }
 
@@ -247,16 +247,16 @@ namespace AngelScript
                                       const std::string& dbName)
     {
         _mysql = mysql_init(nullptr);
-        if (!_mysql) return false;
+        if (!(MYSQL*)_mysql) return false;
 
         unsigned int timeout = 10;
-        mysql_options(_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
+        mysql_options((MYSQL*)_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &timeout);
         bool reconnect = true;
-        mysql_options(_mysql, MYSQL_OPT_RECONNECT, &reconnect);
-        mysql_options(_mysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+        mysql_options((MYSQL*)_mysql, MYSQL_OPT_RECONNECT, &reconnect);
+        mysql_options((MYSQL*)_mysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 
         MYSQL* conn = mysql_real_connect(
-            _mysql, host.c_str(), user.c_str(), pass.c_str(),
+            (MYSQL*)_mysql, host.c_str(), user.c_str(), pass.c_str(),
             dbName.c_str(), port, nullptr, 0);
 
         if (!conn)
@@ -268,15 +268,15 @@ namespace AngelScript
         _connected = true;
         TC_LOG_INFO("server.angelscript",
             "[AngelDB] Connected to {}@{}:{}/{} (server version: {})",
-            user, host, port, dbName, mysql_get_server_info(_mysql));
+            user, host, port, dbName, mysql_get_server_info((MYSQL*)_mysql));
         return true;
     }
 
     void ASAngelDB::ShutdownInternal()
     {
-        if (_mysql)
+        if ((MYSQL*)_mysql)
         {
-            mysql_close(_mysql);
+            mysql_close((MYSQL*)_mysql);
             _mysql = nullptr;
         }
         _connected = false;
@@ -299,11 +299,11 @@ namespace AngelScript
     // ========================================================================
     bool ASAngelDB::ExecuteLocked(const std::string& sql)
     {
-        if (!_mysql || !_connected) return false;
-        if (mysql_query(_mysql, sql.c_str()) != 0)
+        if (!(MYSQL*)_mysql || !_connected) return false;
+        if (mysql_query((MYSQL*)_mysql, sql.c_str()) != 0)
         {
             TC_LOG_ERROR("server.angelscript", "[AngelDB] Execute() failed: {} — {}",
-                mysql_error(_mysql), sql);
+                mysql_error((MYSQL*)_mysql), sql);
             return false;
         }
         return true;
@@ -311,17 +311,17 @@ namespace AngelScript
 
     MYSQL_RES* ASAngelDB::QueryLocked(const std::string& sql)
     {
-        if (!_mysql || !_connected) return nullptr;
-        if (mysql_query(_mysql, sql.c_str()) != 0)
+        if (!(MYSQL*)_mysql || !_connected) return nullptr;
+        if (mysql_query((MYSQL*)_mysql, sql.c_str()) != 0)
         {
             TC_LOG_ERROR("server.angelscript", "[AngelDB] Query() failed: {} — {}",
-                mysql_error(_mysql), sql);
+                mysql_error((MYSQL*)_mysql), sql);
             return nullptr;
         }
-        MYSQL_RES* result = mysql_store_result(_mysql);
-        if (!result && mysql_field_count(_mysql) > 0)
+        MYSQL_RES* result = mysql_store_result((MYSQL*)_mysql);
+        if (!result && mysql_field_count((MYSQL*)_mysql) > 0)
             TC_LOG_ERROR("server.angelscript", "[AngelDB] mysql_store_result() failed: {}",
-                mysql_error(_mysql));
+                mysql_error((MYSQL*)_mysql));
         return result;
     }
 
@@ -337,17 +337,17 @@ namespace AngelScript
     std::string ASAngelDB::EscapeString(const std::string& str)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        if (!_mysql) return str;
+        if (!(MYSQL*)_mysql) return str;
         std::vector<char> buf(str.size() * 2 + 1);
-        size_t len = mysql_real_escape_string(_mysql, buf.data(), str.c_str(), str.size());
+        size_t len = mysql_real_escape_string((MYSQL*)_mysql, buf.data(), str.c_str(), str.size());
         return std::string(buf.data(), len);
     }
 
     std::string ASAngelDB::GetLastError()
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        if (!_mysql) return "Not connected";
-        return std::string(mysql_error(_mysql));
+        if (!(MYSQL*)_mysql) return "Not connected";
+        return std::string(mysql_error((MYSQL*)_mysql));
     }
 
     // ========================================================================
@@ -422,7 +422,7 @@ namespace AngelScript
             // Split by semicolon and execute each statement
             {
                 std::lock_guard<std::mutex> lock(_mutex);
-                if (!_mysql || !_connected)
+                if (!(MYSQL*)_mysql || !_connected)
                 {
                     TC_LOG_ERROR("server.angelscript", "[AngelDB] Not connected, skipping: {}", filename);
                     break;
@@ -439,16 +439,16 @@ namespace AngelScript
                     if (first == std::string::npos) continue; // empty statement
                     std::string trimmed = statement.substr(first);
 
-                    if (mysql_query(_mysql, trimmed.c_str()) != 0)
+                    if (mysql_query((MYSQL*)_mysql, trimmed.c_str()) != 0)
                     {
                         TC_LOG_ERROR("server.angelscript",
                             "[AngelDB] SQL error in {}: {} — Statement: {}",
-                            filename, mysql_error(_mysql), trimmed.substr(0, 120));
+                            filename, mysql_error((MYSQL*)_mysql), trimmed.substr(0, 120));
                         fileOk = false;
                         break;
                     }
                     // Consume result (multi-statement needs this)
-                    MYSQL_RES* res = mysql_store_result(_mysql);
+                    MYSQL_RES* res = mysql_store_result((MYSQL*)_mysql);
                     if (res) mysql_free_result(res);
                 }
 

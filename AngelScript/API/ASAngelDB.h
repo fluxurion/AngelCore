@@ -16,9 +16,8 @@
 #include <atomic>
 #include "Define.h"
 
-struct MYSQL;
-struct MYSQL_RES;
 class asIScriptEngine;
+struct ASAngelDBResult;
 
 namespace AngelScript
 {
@@ -69,7 +68,8 @@ namespace AngelScript
                               const std::string& user, const std::string& pass,
                               const std::string& dbName);
 
-        MYSQL* _mysql = nullptr;
+        // Opaque MySQL handle — cast to MYSQL* in .cpp (avoids Linux typedef conflict)
+        void* _mysql = nullptr;
         std::mutex _mutex;
         std::atomic<bool> _connected{false};
 
