@@ -693,12 +693,12 @@ void AngelScriptMgr::TriggerWorldHook(WorldHookType t) { EXEC_HOOKS(ASWorldHooks
 void AngelScriptMgr::TriggerWorldUpdate(uint32 d) { for(auto& f:ASWorldHooks::instance()->GetHooks(WorldHookType::ON_UPDATE)){if(!_context)break;if(_context->Prepare(f)<0)continue;_context->SetArgDWord(0,d);_context->Execute();} }
 void AngelScriptMgr::TriggerConsoleCommand(std::string& command) 
 {
-    // Force check for AngelScript reload commands
-    if (command == "reload angelscript" || command == "rel as")
+    // AngelScript reload commands — # prefix works from both console and in-game
+    if (command == "reload angelscript" || command == "rel as" ||
+        command == "#reload angelscript" || command == "#rel as")
     {
         ReloadScripts();
         printf("AngelScript scripts reloaded.\n");
-        // Clear the command to prevent normal processing
         command.clear();
         return;
     }
@@ -712,8 +712,9 @@ void AngelScriptMgr::TriggerPlayerChat(Player* p, uint32 t, uint32 l, std::strin
 { 
     if(!p)return;
     
-    // Force check for AngelScript reload commands
-    if (m == "reload angelscript" || m == "rel as")
+    // AngelScript reload commands — # prefix works from both console and in-game
+    if (m == "reload angelscript" || m == "rel as" ||
+        m == "#reload angelscript" || m == "#rel as")
     {
         WorldSession* session = p->GetSession();
         if (session && !session->HasPermission(rbac::RBAC_PERM_COMMAND_RELOAD_ANGELSCRIPT))
