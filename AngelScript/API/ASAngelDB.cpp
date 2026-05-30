@@ -309,19 +309,20 @@ namespace AngelScript
         return true;
     }
 
-    MYSQL_RES* ASAngelDB::QueryLocked(const std::string& sql)
+    void* ASAngelDB::QueryLocked(const std::string& sql)
     {
-        if (!(MYSQL*)_mysql || !_connected) return nullptr;
-        if (mysql_query((MYSQL*)_mysql, sql.c_str()) != 0)
+        MYSQL* m = static_cast<MYSQL*>(_mysql);
+        if (!m || !_connected) return nullptr;
+        if (mysql_query(m, sql.c_str()) != 0)
         {
             TC_LOG_ERROR("server.angelscript", "[AngelDB] Query() failed: {} — {}",
-                mysql_error((MYSQL*)_mysql), sql);
+                mysql_error(m), sql);
             return nullptr;
         }
-        MYSQL_RES* result = mysql_store_result((MYSQL*)_mysql);
-        if (!result && mysql_field_count((MYSQL*)_mysql) > 0)
+        MYSQL_RES* result = mysql_store_result(m);
+        if (!result && mysql_field_count(m) > 0)
             TC_LOG_ERROR("server.angelscript", "[AngelDB] mysql_store_result() failed: {}",
-                mysql_error((MYSQL*)_mysql));
+                mysql_error(m));
         return result;
     }
 
@@ -517,12 +518,12 @@ namespace AngelScript
         return ASAngelDB::Instance().Execute(sql);
     }
 
-    static ASAngelDBResult AS_AngelDB_Query(const std::string& sql)
+    ASAngelDBResult AS_AngelDB_Query(const std::string& sql)
     {
         ASAngelDBResult result;
         {
             std::lock_guard<std::mutex> lock(ASAngelDB::Instance()._mutex);
-            result.res = ASAngelDB::Instance().QueryLocked(sql);
+            result.res = static_cast<MYSQL_RES*>(ASAngelDB::Instance().QueryLocked(sql));
         }
         if (result.res)
         {

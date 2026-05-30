@@ -63,7 +63,7 @@ namespace AngelScript
 
         void ShutdownInternal();
         bool ExecuteLocked(const std::string& sql);
-        MYSQL_RES* QueryLocked(const std::string& sql);
+        void* QueryLocked(const std::string& sql);
         bool ConnectWithRetry(const std::string& host, unsigned int port,
                               const std::string& user, const std::string& pass,
                               const std::string& dbName);
