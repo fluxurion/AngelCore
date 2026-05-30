@@ -72,6 +72,7 @@ target_link_libraries(angelscript_core
     angelscript_sdk
     game  # TrinityCore game library
     trinity-core-interface
+    mysql # MySQL C API (for AngelDB raw connection)
 )
 
 target_compile_definitions(angelscript_core
@@ -95,7 +96,7 @@ add_custom_command(TARGET angelscript_core POST_BUILD
 # Installation - install scripts alongside binaries
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/angelscripts/
   DESTINATION bin/angelscripts
-  FILES_MATCHING 
+  FILES_MATCHING
     PATTERN "*.as"
     PATTERN "*.txt"
     PATTERN "*.md"

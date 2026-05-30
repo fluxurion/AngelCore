@@ -260,6 +260,7 @@ namespace AngelScript
         void RegisterEnhancedPacketAPI();
         void RegisterScriptAttributesAPI();
         void RegisterSpawnAPI();
+        void RegisterAngelDBAPI();
         void RegisterInstanceAPI();
         void RegisterBattlegroundAPI();
         void RegisterArenaAPI();

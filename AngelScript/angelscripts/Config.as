@@ -13,7 +13,7 @@
 bool CONFIG_BPAY_STORE_ENABLED = true;
 
 // IngameShop.Currency - Payment currency ID
-// 1=USD, 2=GBP, 3=BattleCoins, 4=EUR, 5=RUB, 8=ARS, 9=CLP, 10=MXN, 11=BRL, 
+// 1=USD, 2=GBP, 3=BattleCoins, 4=EUR, 5=RUB, 8=ARS, 9=CLP, 10=MXN, 11=BRL,
 // 12=AUD, 14=CPT, 15=TPT, 16=BETA, 28=JPY, 29=CAD, 30=NZD
 // Default: 3 (BattleCoins)
 uint32 CONFIG_BPAY_STORE_CURRENCY = 3;
@@ -42,3 +42,19 @@ int32 CONFIG_BPAY_CONTENT_SET_ID = 11;
 // Set to 0 to allow anytime
 // Default: 2
 uint32 CONFIG_CATCH_UP_REQUIRED_DAYS = 2;
+
+// ============================================================================
+// ANGELDB - Independent MySQL Database for AngelScript
+// Credentials are read from worldserver.conf (WorldDatabaseInfo).
+// Only the database name can be overridden here if you need a custom DB.
+// The C++ layer auto-creates the database if it doesn't exist.
+// ============================================================================
+
+// AngelDB.Database - Database name (optional, default: "angelcore_scripts")
+string CONFIG_ANGELDB_DATABASE = "angelcore_scripts";
+
+// AngelDB.UpdatesDir - Path to SQL update files (relative to angelscripts/ or absolute)
+// The C++ layer scans <UpdatesDir>/pending/ for .sql files on startup/reload.
+// Executed files are moved to <UpdatesDir>/applied/.
+// Default: "AngelDB" (resolves to angelscripts/AngelDB/)
+string CONFIG_ANGELDB_UPDATES_DIR = "AngelDB";

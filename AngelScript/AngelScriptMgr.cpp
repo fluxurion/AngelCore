@@ -51,6 +51,7 @@
 #include "API/ASCharacterPacketsAPI.h"
 #include "API/ASGameObjectAPI.h"
 #include "API/ASUnitAPI.h"
+#include "API/ASAngelDB.h"
 #include "SpellAuras.h"
 #include "SpellAuraEffects.h"
 #include "API/ASSpellAPI.h"
@@ -194,7 +195,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     RegisterCharacterPacketsAPI();
     RegisterGlobalFunctions(); RegisterWorldAPI(); RegisterUpdateFieldAPI(); RegisterMathAPI(); RegisterStringAPI();
     RegisterQuestAPI(); RegisterCraftingAPI(); RegisterItemAPI(); RegisterDB2API(); RegisterDynamicDB2API();
-    RegisterSpawnAPI();
+    RegisterSpawnAPI(); RegisterAngelDBAPI();
 
     // ---- Hook registration functions exposed to scripts ----
     // No-arg callbacks (ScriptCallback)
@@ -266,6 +267,7 @@ void AngelScriptMgr::RegisterCraftingAPI()    { _scriptEngine->RegisterGlobalFun
 void AngelScriptMgr::RegisterItemAPI() {}
 void AngelScriptMgr::RegisterDB2API() { AngelScript::RegisterDB2API(_scriptEngine); }
 void AngelScriptMgr::RegisterSpawnAPI() { AngelScript::RegisterSpawnAPI(_scriptEngine); }
+void AngelScriptMgr::RegisterAngelDBAPI() { AngelScript::RegisterAngelDBAPI(_scriptEngine); }
 void AngelScriptMgr::RegisterDynamicDB2API() { AngelScript::RegisterDynamicDB2API(_scriptEngine); }
 void AngelScriptMgr::InitializeDB2Loader() { /* DB2 data is already loaded by TC at startup — no custom loading needed */ }
 void AngelScriptMgr::RegisterSharedDataAPI() {}
