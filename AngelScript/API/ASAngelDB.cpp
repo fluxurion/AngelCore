@@ -522,7 +522,7 @@ namespace AngelScript
     {
         ASAngelDBResult result;
         {
-            std::lock_guard<std::mutex> lock(ASAngelDB::Instance()._mutex);
+            std::lock_guard<std::mutex> lock(ASAngelDB::Instance().GetMutex());
             result.res = static_cast<MYSQL_RES*>(ASAngelDB::Instance().QueryLocked(sql));
         }
         if (result.res)
