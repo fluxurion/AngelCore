@@ -721,7 +721,7 @@ void AngelScriptMgr::TriggerPlayerChat(Player* p, uint32 t, uint32 l, std::strin
         {
             ChatHandler handler(session);
             handler.SendSysMessage("Command not allowed for you.");
-            m.clear(); // Clear message to prevent further processing
+            m.clear();
             return;
         }
 
@@ -729,7 +729,29 @@ void AngelScriptMgr::TriggerPlayerChat(Player* p, uint32 t, uint32 l, std::strin
         
         ChatHandler handler(session);
         handler.SendSysMessage("AngelScript scripts reloaded.");
-        m.clear(); // Clear message to prevent further processing
+        m.clear();
+        return;
+    }
+
+    // All # prefixed messages are AngelScript commands — strip # and route to ON_CHAT hooks,
+    // then suppress the chat message so it doesn't broadcast as regular chat.
+    bool isHashCommand = !m.empty() && m[0] == '#';
+    if (isHashCommand)
+    {
+        m.erase(0, 1); // strip '#' so hooks see "bpay credits" instead of "#bpay credits"
+
+        for (auto& f : ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_CHAT))
+        {
+            if (!_context) break;
+            if (_context->Prepare(f) < 0) continue;
+            _context->SetArgObject(0, p);
+            _context->SetArgDWord(1, t);
+            _context->SetArgDWord(2, l);
+            _context->SetArgObject(3, &m);
+            _context->Execute();
+        }
+
+        m.clear(); // suppress chat broadcast
         return;
     }
     
