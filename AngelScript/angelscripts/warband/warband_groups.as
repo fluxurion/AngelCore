@@ -223,13 +223,26 @@ void EnsureFavoritesGroup(uint32 accountId)
 {
     string accountStr = "" + accountId;
 
-    // Check if a Favorites group already exists for this account
-    AngelDBResult existCheck = AngelDB_Query(
-        "SELECT `groupId` FROM `warband_groups` WHERE `accountId` = " + accountStr +
-        " AND `name` = '" + FAVORITES_GROUP_NAME + "' AND `warbandSceneId` = " + FAVORITES_WARBAND_SCENE_ID + " LIMIT 1"
+    // Generate a stable groupId: use accountId shifted + fixed marker
+    uint64 groupId = (uint64(accountId) << 20) | uint64(0xFAB0);
+
+    // Check if the correctly-keyed Favorites group already exists
+    AngelDBResult idCheck = AngelDB_Query(
+        "SELECT 1 FROM `warband_groups` WHERE `accountId` = " + accountStr +
+        " AND `groupId` = " + groupId + " LIMIT 1"
     );
-    if (existCheck.GetRowCount() > 0)
-        return; // already exists, nothing to do
+    if (idCheck.GetRowCount() > 0)
+        return; // correct row already present, nothing to do
+
+    // Delete any orphaned Favorites rows with a wrong groupId (e.g. from manual inserts or old schema)
+    AngelDB_Execute(
+        "DELETE FROM `warband_groups` WHERE `accountId` = " + accountStr +
+        " AND `name` = '" + FAVORITES_GROUP_NAME + "' AND `groupId` != " + groupId
+    );
+    AngelDB_Execute(
+        "DELETE FROM `warband_group_members` WHERE `accountId` = " + accountStr +
+        " AND `groupId` NOT IN (SELECT `groupId` FROM `warband_groups` WHERE `accountId` = " + accountStr + ")"
+    );
 
     // Fetch top-4 most-played characters for this account
     QueryResult@ charsResult = CharacterQuery(
@@ -238,18 +251,6 @@ void EnsureFavoritesGroup(uint32 accountId)
     );
     if (charsResult is null)
         return; // no characters on account, skip
-
-    // Generate a stable groupId: use a hash of accountId so it's deterministic
-    // We shift by 32 bits and OR with a fixed marker to stay in uint64 range and avoid collisions with client IDs
-    uint64 groupId = (uint64(accountId) << 20) | uint64(0xFAB0);
-
-    // Ensure this groupId doesn't already exist (collision guard)
-    AngelDBResult idCheck = AngelDB_Query(
-        "SELECT 1 FROM `warband_groups` WHERE `accountId` = " + accountStr +
-        " AND `groupId` = " + groupId + " LIMIT 1"
-    );
-    if (idCheck.GetRowCount() > 0)
-        return; // already present under this id
 
     // Insert the Favorites group row (orderIndex 0 = first position)
     bool groupInserted = AngelDB_Execute(
