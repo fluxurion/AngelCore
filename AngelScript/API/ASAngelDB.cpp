@@ -602,7 +602,25 @@ namespace AngelScript
     }
 
     static void R_DefaultCtor(ASAngelDBResult* mem) { new(mem) ASAngelDBResult(); }
-    static void R_CopyCtor(ASAngelDBResult* mem, ASAngelDBResult&) { new(mem) ASAngelDBResult(); }
+    // Transfer ownership from source (move semantics). AngelDB_Query returns by
+    // value, so AngelScript copy-constructs the script variable from the returned
+    // temporary; the temporary is destructed right after, making transfer safe.
+    // MYSQL_RES cannot be deep-copied, so we must move rather than duplicate.
+    static void R_CopyCtor(ASAngelDBResult* mem, ASAngelDBResult& other)
+    {
+        new(mem) ASAngelDBResult();
+        mem->res            = other.res;
+        mem->currentRow     = other.currentRow;
+        mem->currentLengths = other.currentLengths;
+        mem->fieldCount     = other.fieldCount;
+        mem->rowCount       = other.rowCount;
+        mem->fields         = other.fields;
+        mem->ownsResult     = other.ownsResult;
+        other.res            = nullptr;
+        other.ownsResult     = false;
+        other.currentRow     = nullptr;
+        other.currentLengths = nullptr;
+    }
     static void R_Dtor(ASAngelDBResult* mem) { mem->~ASAngelDBResult(); }
 
     // opAssign — frees old MYSQL_RES, takes ownership from source (move semantics)
