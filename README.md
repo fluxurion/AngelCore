@@ -1,6 +1,6 @@
 # AngelCore — TrinityCore + AngelScript Integration
 
-AngelCore is a custom World of Warcraft server project based on **TrinityCore (The War Within)**
+AngelCore is a custom World of Warcraft server project based on **TrinityCore**
 with a deep **AngelScript integration** — a fully scriptable game server where most custom
 game logic can be written in AngelScript (`.as`) files with hot-reload support.
 
