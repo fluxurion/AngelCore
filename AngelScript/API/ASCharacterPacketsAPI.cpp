@@ -32,13 +32,16 @@
 #include "Database/DatabaseEnv.h"
 #include <sstream>
 #include <unordered_map>
-#include <vector>
+#include <deque>
 
 namespace AngelScript
 {
     // Persistent storage for warband group names (WarbandGroup uses string_view)
-    // Maps EnumCharactersResult* to a vector of strings that persist until cleared
-    static std::unordered_map<void*, std::vector<std::string>> g_WarbandGroupNameStorage;
+    // Maps EnumCharactersResult* to a deque of strings that persist until cleared.
+    // A deque is used (not vector) so element addresses remain stable across
+    // push_back — otherwise the string_view in WarbandGroup.Name would dangle
+    // after the storage reallocates when a second group is added.
+    static std::unordered_map<void*, std::deque<std::string>> g_WarbandGroupNameStorage;
 
     static void StoreWarbandGroupName(WorldPackets::Character::EnumCharactersResult* result, std::string&& name)
     {
