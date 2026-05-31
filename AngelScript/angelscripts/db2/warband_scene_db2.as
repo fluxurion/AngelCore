@@ -14,7 +14,6 @@ void LoadWarbandSceneDB2()
     if (g_warbandSceneDb2Loaded) return;
 
     string db2Path = GetDB2Path(WARBAND_SCENE_STORAGE);
-    Print("[DB2Loader] Loading " + WARBAND_SCENE_STORAGE + " from " + db2Path);
 
     DB2Schema@ schema = CreateDB2Schema(WARBAND_SCENE_STORAGE);
     if (schema is null) return;
@@ -44,7 +43,6 @@ void LoadWarbandSceneDB2()
         // Try fallback without enUS
         string dataDir = GetConfigString("DataDir", ".");
         db2Path = dataDir + "/dbc/" + WARBAND_SCENE_STORAGE + ".db2";
-        Print("[DB2Loader] Fallback loading from " + db2Path);
         handle = LoadDB2Storage(WARBAND_SCENE_STORAGE, db2Path, schema);
     }
 
@@ -55,12 +53,12 @@ void LoadWarbandSceneDB2()
         {
             g_cachedWarbandSceneIds = store.GetAllIds();
             g_warbandSceneDb2Loaded = true;
-            Print("[DB2Loader] Successfully loaded " + g_cachedWarbandSceneIds.length() + " warband scenes");
+            Print("[DB2] Loaded " + g_cachedWarbandSceneIds.length() + " WarbandScene entries");
         }
     }
     else
     {
-        Print("[DB2Loader] FAILED to load " + WARBAND_SCENE_STORAGE);
+        PrintError("[DB2] FAILED to load " + WARBAND_SCENE_STORAGE);
     }
 }
 

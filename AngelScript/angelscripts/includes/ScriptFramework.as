@@ -250,7 +250,6 @@ void GiveXP(Player@ player, uint32 amount)
 {
     if (player is null) return;
     // Use ModifyMoney as proxy — actual GiveXP requires dispatch hook
-    Print("GiveXP: " + amount + " to " + player.GetName());
 }
 
 // Get absolute path to a DB2 file based on config
