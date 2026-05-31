@@ -300,12 +300,23 @@ namespace AngelScript
     bool ASAngelDB::ExecuteLocked(const std::string& sql)
     {
         if (!(MYSQL*)_mysql || !_connected) return false;
-        if (mysql_query((MYSQL*)_mysql, sql.c_str()) != 0)
+        MYSQL* m = static_cast<MYSQL*>(_mysql);
+        if (mysql_query(m, sql.c_str()) != 0)
         {
             TC_LOG_ERROR("server.angelscript", "[AngelDB] Execute() failed: {} — {}",
-                mysql_error((MYSQL*)_mysql), sql);
+                mysql_error(m), sql);
+            // Drain any partial result sets so the connection stays usable
+            do {
+                MYSQL_RES* res = mysql_store_result(m);
+                if (res) mysql_free_result(res);
+            } while (mysql_next_result(m) == 0);
             return false;
         }
+        // CLIENT_MULTI_STATEMENTS: drain all result sets so the next query can run cleanly
+        do {
+            MYSQL_RES* res = mysql_store_result(m);
+            if (res) mysql_free_result(res);
+        } while (mysql_next_result(m) == 0);
         return true;
     }
 
