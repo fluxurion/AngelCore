@@ -77,7 +77,7 @@ All AngelScript commands use `#` prefix:
 
 ## AngelDB — Independent MySQL Database
 
-AngelDB is a standalone MySQL database (`angelcore_scripts`) used for all custom script data.
+AngelDB is a standalone MySQL database (`angelcore_db`) used for all custom script data.
 It reuses the same MySQL server as the world/character databases but keeps script data
 completely separate from TrinityCore's tables.
 

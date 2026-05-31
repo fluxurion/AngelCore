@@ -58,7 +58,7 @@ All AngelScript commands use `#` prefix and work from both in-game chat and serv
 
 ## AngelDB — Independent Database
 
-All script data lives in a separate MySQL database (`angelcore_scripts` by default).
+All script data lives in a separate MySQL database (`angelcore_db` by default).
 Credentials are read from `worldserver.conf` — the same MySQL server as TC's databases.
 
 ### SQL Update System
@@ -127,7 +127,7 @@ Fully functional in-game shop with product listings, purchase flow, and delivery
 ```angelscript
 bool   CONFIG_BPAY_STORE_ENABLED = true;       // Enable shop
 uint32 CONFIG_BPAY_STORE_CURRENCY = 3;          // Currency ID (3 = BattleCoins)
-string CONFIG_ANGELDB_DATABASE = "angelcore_scripts";  // AngelDB name
+string CONFIG_ANGELDB_DATABASE = "angelcore_db";  // AngelDB name
 string CONFIG_ANGELDB_UPDATES_DIR = "AngelDB";  // Updates folder
 ```
 

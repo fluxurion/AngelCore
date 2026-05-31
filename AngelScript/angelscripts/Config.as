@@ -50,8 +50,8 @@ uint32 CONFIG_CATCH_UP_REQUIRED_DAYS = 2;
 // The C++ layer auto-creates the database if it doesn't exist.
 // ============================================================================
 
-// AngelDB.Database - Database name (optional, default: "angelcore_scripts")
-string CONFIG_ANGELDB_DATABASE = "angelcore_scripts";
+// AngelDB.Database - Database name (optional, default: "angelcore_db")
+string CONFIG_ANGELDB_DATABASE = "angelcore_db";
 
 // AngelDB.UpdatesDir - Path to SQL update files (relative to angelscripts/ or absolute)
 // The C++ layer scans <UpdatesDir>/pending/ for .sql files on startup/reload.

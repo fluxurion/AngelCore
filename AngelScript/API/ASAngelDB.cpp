@@ -4,7 +4,7 @@
  * Connection credentials come from worldserver.conf (WorldDatabaseInfo):
  *   WorldDatabaseInfo = "host;port;user;password;world_db"
  * AngelDB reuses host/port/user/password and replaces the database name
- * with "angelcore_scripts" (or a custom name set via AS).
+ * with "angelcore_db" (or a custom name set via AS).
  *
  * If the database doesn't exist, it is auto-created on first connect.
  *
@@ -143,7 +143,7 @@ namespace AngelScript
         std::string pass = parts[3];
         // parts[4] is the world DB name — we replace it
 
-        return Initialize(host, port, user, pass, "angelcore_scripts");
+        return Initialize(host, port, user, pass, "angelcore_db");
     }
 
     // ========================================================================
@@ -162,7 +162,7 @@ namespace AngelScript
         }
 
         if (dbName.empty())
-            dbName = "angelcore_scripts";
+            dbName = "angelcore_db";
 
         unsigned int portNum = static_cast<unsigned int>(
             std::stoul(port.empty() ? "3306" : port));
@@ -369,8 +369,8 @@ namespace AngelScript
 
         if (!fs::exists(pendingDir) || !fs::is_directory(pendingDir))
         {
-            TC_LOG_WARN("server.angelscript",
-                "[AngelDB] Pending updates dir not found: {}", pendingDir.string());
+            TC_LOG_INFO("server.angelscript",
+                "[AngelDB] Pending updates dir not found: {} — copy AngelDB/ to your binary output directory", pendingDir.string());
             return 0;
         }
 
@@ -711,13 +711,23 @@ namespace AngelScript
         ASAngelDB::Instance().AutoInitialize();
 
         // ---- Auto-run pending SQL updates ----
-        // Default path: <angelscripts>/AngelDB/
-        // Override in Config.as: CONFIG_ANGELDB_UPDATES_DIR
+        // Resolves <binary_dir>/angelscripts/AngelDB/ on both Linux and Windows.
+        // Override via worldserver.conf: AngelScript.UpdatesDir = "/absolute/path"
         std::string updatesDir = sConfigMgr->GetStringDefault("AngelScript.UpdatesDir", "");
         if (updatesDir.empty())
         {
-            // Fallback: use AngelScript's script path
-            updatesDir = (fs::path(AngelScriptMgr::instance()->GetScriptPath()) / "AngelDB").string();
+            fs::path scriptDir = fs::path(AngelScriptMgr::instance()->GetScriptPath());
+            if (!scriptDir.is_absolute())
+            {
+#ifdef _WIN32
+                char exeBuf[MAX_PATH];
+                GetModuleFileNameA(nullptr, exeBuf, MAX_PATH);
+                scriptDir = fs::path(exeBuf).parent_path() / scriptDir;
+#else
+                scriptDir = fs::read_symlink("/proc/self/exe").parent_path() / scriptDir;
+#endif
+            }
+            updatesDir = (scriptDir / "AngelDB").string();
         }
         ASAngelDB::Instance().RunPendingUpdates(updatesDir);
 

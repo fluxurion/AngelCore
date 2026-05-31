@@ -1,7 +1,7 @@
 /*
  * ASAngelDB.h — Independent MySQL Database for AngelScript
  * Connection credentials are read from worldserver.conf (WorldDatabaseInfo).
- * Only the database name differs (default: "angelcore_scripts").
+ * Only the database name differs (default: "angelcore_db").
  * The database is auto-created on first connect if it doesn't exist.
  *
  * Zero modification to TrinityCore factory files.
@@ -29,7 +29,7 @@ namespace AngelScript
         bool AutoInitialize();
         bool Initialize(std::string host, std::string port,
                         std::string user, std::string pass,
-                        std::string dbName = "angelcore_scripts");
+                        std::string dbName = "angelcore_db");
         void Shutdown();
         bool IsConnected() const;
         bool Execute(const std::string& sql);

@@ -5,7 +5,7 @@
  * during server startup. It reuses the same MySQL server credentials
  * as the world/character/login databases.
  *
- * The database "angelcore_scripts" is auto-created if it doesn't exist.
+ * The database "angelcore_db" is auto-created if it doesn't exist.
  *
  * TABLE SETUP (runs automatically on startup):
  *
