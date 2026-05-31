@@ -609,6 +609,28 @@ namespace AngelScript
     static void R_CopyCtor(ASAngelDBResult* mem, ASAngelDBResult&) { new(mem) ASAngelDBResult(); }
     static void R_Dtor(ASAngelDBResult* mem) { mem->~ASAngelDBResult(); }
 
+    // opAssign — frees old MYSQL_RES, takes ownership from source (move semantics)
+    static ASAngelDBResult& R_OpAssign(ASAngelDBResult& self, ASAngelDBResult& other)
+    {
+        if (&self != &other)
+        {
+            if (self.ownsResult && self.res)
+                mysql_free_result(self.res);
+            self.res = other.res;
+            self.currentRow = other.currentRow;
+            self.currentLengths = other.currentLengths;
+            self.fieldCount = other.fieldCount;
+            self.rowCount = other.rowCount;
+            self.fields = other.fields;
+            self.ownsResult = other.ownsResult;
+            other.res = nullptr;
+            other.ownsResult = false;
+            other.currentRow = nullptr;
+            other.currentLengths = nullptr;
+        }
+        return self;
+    }
+
     // ========================================================================
     // Register API
     // ========================================================================
@@ -628,6 +650,10 @@ namespace AngelScript
         r = engine->RegisterObjectBehaviour("AngelDBResult",
             asBEHAVE_DESTRUCT,   "void f()",
             asFUNCTION(R_Dtor),        asCALL_CDECL_OBJFIRST);
+        // opAssign — enables result = AngelDB_Query(...) reassignment
+        r = engine->RegisterObjectMethod("AngelDBResult",
+            "AngelDBResult& opAssign(const AngelDBResult& in)",
+            asFUNCTION(R_OpAssign), asCALL_CDECL_OBJFIRST);
 
         r = engine->RegisterObjectMethod("AngelDBResult",
             "uint64 GetRowCount() const",      asFUNCTION(R_GetRowCount), asCALL_CDECL_OBJFIRST);
