@@ -1,96 +1,139 @@
-# ![logo](https://community.trinitycore.org/public/style_images/1_trinitycore.png) TrinityCore (master)
+# AngelCore — TrinityCore + AngelScript Integration
 
-[![Average time to resolve an issue](https://isitmaintained.com/badge/resolution/TrinityCore/TrinityCore.svg)](https://isitmaintained.com/project/TrinityCore/TrinityCore "Average time to resolve an issue") [![Percentage of issues still open](https://isitmaintained.com/badge/open/TrinityCore/TrinityCore.svg)](https://isitmaintained.com/project/TrinityCore/TrinityCore "Percentage of issues still open")
+AngelCore is a custom World of Warcraft server project based on **TrinityCore (The War Within)**
+with a deep **AngelScript integration** — a fully scriptable game server where most custom
+game logic can be written in AngelScript (`.as`) files with hot-reload support.
 
---------------
+## What is AngelScript?
 
+AngelScript is a C++-like scripting language embedded directly into the server. It allows
+writing game logic without modifying or recompiling C++ source code. Scripts are compiled at
+load time, run on the server's main thread, and can be reloaded at any time without restarting
+the server.
 
-* [Build Status](#build-status)
-* [Introduction](#introduction)
-* [Requirements](#requirements)
-* [Install](#install)
-* [Reporting issues](#reporting-issues)
-* [Submitting fixes](#submitting-fixes)
-* [Copyright](#copyright)
-* [Authors &amp; Contributors](#authors--contributors)
-* [Links](#links)
+## Why AngelScript?
 
+- **No C++ recompiles** — iterate on game logic instantly
+- **Hot-reload** — `#rel as` reloads all scripts in seconds, preserving server uptime
+- **Isolation** — failed scripts are rejected with detailed error messages, never crash the server
+- **Full API access** — players, creatures, gameobjects, spells, quests, packets, DB2 data
+- **Independent database** — AngelDB provides a separate MySQL database for script data
 
+### Core Philosophy: Minimal Merge Conflicts
 
-## Build Status
+The entire purpose of the AngelScript integration is to **keep AngelCore custom work
+completely separated from TrinityCore upstream code**. When TrinityCore releases updates:
 
-master | 3.3.5 | cata_classic
-:------------: | :------------: | :------------:
-[![master Build Status](https://circleci.com/gh/TrinityCore/TrinityCore/tree/master.svg?style=shield)](https://circleci.com/gh/TrinityCore/TrinityCore/tree/master) | [![3.3.5 Build Status](https://circleci.com/gh/TrinityCore/TrinityCore/tree/3.3.5.svg?style=shield)](https://circleci.com/gh/TrinityCore/TrinityCore/tree/3.3.5) | [![cata_classic Build Status](https://circleci.com/gh/TrinityCore/TrinityCore/tree/cata_classic.svg?style=shield)](https://circleci.com/gh/TrinityCore/TrinityCore/tree/cata_classic)
-[![master Build status](https://ci.appveyor.com/api/projects/status/54d0u1fxe50ad80o/branch/master?svg=true)](https://ci.appveyor.com/project/DDuarte/trinitycore/branch/master) | [![Build status](https://ci.appveyor.com/api/projects/status/54d0u1fxe50ad80o/branch/3.3.5?svg=true)](https://ci.appveyor.com/project/DDuarte/trinitycore/branch/3.3.5) | [![Build status](https://ci.appveyor.com/api/projects/status/54d0u1fxe50ad80o/branch/cata_classic?svg=true)](https://ci.appveyor.com/project/DDuarte/trinitycore/branch/cata_classic)
-[![master GCC Build status](https://github.com/TrinityCore/TrinityCore/actions/workflows/gcc-build.yml/badge.svg?branch=master&event=push)](https://github.com/TrinityCore/TrinityCore/actions?query=workflow%3AGCC+branch%3Amaster+event%3Apush) | [![3.3.5 GCC Build status](https://github.com/TrinityCore/TrinityCore/actions/workflows/gcc-build.yml/badge.svg?branch=3.3.5&event=push)](https://github.com/TrinityCore/TrinityCore/actions?query=workflow%3AGCC+branch%3A3.3.5+event%3Apush) | [![cata_classic GCC Build status](https://github.com/TrinityCore/TrinityCore/actions/workflows/gcc-build.yml/badge.svg?branch=cata_classic&event=push)](https://github.com/TrinityCore/TrinityCore/actions?query=workflow%3AGCC+branch%3Acata_classic+event%3Apush)
-[![master macOS arm64 Build status](https://github.com/TrinityCore/TrinityCore/actions/workflows/macos-arm-build.yml/badge.svg?branch=master&event=push)](https://github.com/TrinityCore/TrinityCore/actions?query=workflow%3AGCC+branch%3Amaster+event%3Apush) | | [![cata_classic macOS arm64 Build status](https://github.com/TrinityCore/TrinityCore/actions/workflows/macos-arm-build.yml/badge.svg?branch=cata_classic&event=push)](https://github.com/TrinityCore/TrinityCore/actions?query=workflow%3AGCC+branch%3Acata_classic+event%3Apush)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/435/badge.svg)](https://scan.coverity.com/projects/435) | [![Coverity Scan Build Status](https://scan.coverity.com/projects/4656/badge.svg)](https://scan.coverity.com/projects/4656) |
+- **Only hook insertion points** in the C++ source can cause merge conflicts — and those
+  are minimal (~20 locations across the entire codebase)
+- **All game logic** lives in `.as` files — never touches TC source
+- **All script data** lives in AngelDB — never pollutes TC's auth/characters/world databases
+- **All SQL migrations** run through the AngelDB update system — no TC SQL directory changes
 
-## Introduction
+This means you can pull upstream TrinityCore changes with confidence, knowing that the
+merge surface is tiny and well-defined.
 
-TrinityCore is a *MMORPG* Framework based mostly in C++.
+## Architecture
 
-It is derived from *MaNGOS*, the *Massive Network Game Object Server*, and is
-based on the code of that project with extensive changes over time to optimize,
-improve and cleanup the codebase at the same time as improving the in-game
-mechanics and functionality.
+```
+AngelCore/
+├── AngelScript/              — C++ integration layer
+│   ├── API/                  — Per-type AngelScript bindings
+│   ├── Hooks/                — Hook managers (player, creature, spell, packet, ...)
+│   ├── Dispatch/             — TC ScriptObject bridge
+│   ├── SDK/                  — AngelScript compiler & VM (v2.38.0)
+│   ├── AngelScriptMgr.cpp    — Engine lifecycle, script loading, hook dispatch
+│   └── angelscripts/         — All .as script files live here
+├── src/server/               — TrinityCore source (with hook insertion points)
+└── sql/custom/               — Legacy SQL files (migrated to AngelDB)
+```
 
-It is completely open source; community involvement is highly encouraged.
+## Quick Start
 
-If you wish to contribute ideas or code, please visit our site linked below or
-make pull requests to our [Github repository](https://github.com/TrinityCore/TrinityCore/pulls).
+```bash
+# Build with AngelScript enabled (default)
+cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build --config RelWithDebInfo
 
-For further information on the TrinityCore project, please visit our project
-website at [TrinityCore.org](https://www.trinitycore.org).
+# Scripts are copied to the binary output directory automatically
+# Start the server and use #rel as to reload
+```
 
-## Requirements
+## In-Game Commands
 
+All AngelScript commands use `#` prefix:
 
-Software requirements are available in the [wiki](https://trinitycore.info/en/install/requirements) for
-Windows, Linux and macOS.
+| Command | Description |
+|---|---|
+| `#rel as` | Reload all AngelScript scripts |
+| `#bpay credits` | View BattlePay balance |
+| `#bpay addcredits <amount>` | Add BattlePay credits |
+| `#bpay product <id>` | Purchase a product directly |
+| `#bpay service <type>` | Apply character service |
+| `#bpay reload` | Reload BattlePay product data |
+| `#bpay info` | Show BattlePay status |
+| `#bpay gear` | Request gear catch-up |
+| `#bpay upgrade` | Apply character upgrade package |
 
+## AngelDB — Independent MySQL Database
 
-## Install
+AngelDB is a standalone MySQL database (`angelcore_scripts`) used for all custom script data.
+It reuses the same MySQL server as the world/character databases but keeps script data
+completely separate from TrinityCore's tables.
 
-Detailed installation guides are available in the [wiki](https://trinitycore.info/en/home) for
-Windows, Linux and macOS.
+**Key features:**
+- **Auto-created** on first startup — no manual setup needed
+- **Auto-updates** — `.sql` files in `angelscripts/AngelDB/pending/` run automatically
+- **Credentials from `worldserver.conf`** — same host/port/user/pass as the world database
+- **Separate thread** — never blocks TC's main database pool
 
+```
+angelscripts/AngelDB/
+├── pending/     — Drop .sql files here, they run on next startup/reload
+├── applied/     — Successfully executed files are moved here
+└── README.md    — Full documentation
+```
 
-## Reporting issues
+## Hook System
 
-Issues can be reported via the [Github issue tracker](https://github.com/TrinityCore/TrinityCore/labels/Branch-master).
+Scripts register for game events via hooks. Over 50 hook types across 10 categories:
 
-Please take the time to review existing issues before submitting your own to
-prevent duplicates.
+```angelscript
+void OnLogin(Player@ player) { /* ... */ }
+void main() { RegisterPlayerScript(PLAYER_ON_LOGIN, @OnLogin); }
+```
 
-In addition, thoroughly read through the [issue tracker guide](https://community.trinitycore.org/topic/37-the-trinitycore-issuetracker-and-you/) to ensure
-your report contains the required information. Incorrect or poorly formed
-reports are wasteful and are subject to deletion.
+| Category | Examples |
+|---|---|
+| Player | Login, logout, chat, level up, death, duel, reputation |
+| Creature | Spawn, death, combat, damage, gossip |
+| GameObject | Spawn, use, destroy, gossip |
+| Spell | Cast, hit, effect, damage calc, aura apply |
+| Quest | Accept, complete, reward, status change |
+| Packet | Receive, send |
+| World | Startup, shutdown, update tick, console command |
+| Instance | Enter, leave, boss kill |
+| Battleground | Start, join, leave, objective |
+| Crafting | Start, complete, profession learn |
 
+## API Coverage
 
-## Submitting fixes
+| API | Method Count | Highlights |
+|---|---|---|
+| Player | 45+ | TeleportTo, AddItem, ModifyMoney, CastSpell, SetReputation |
+| Creature | 55+ | AttackStart, DespawnOrUnsummon, SetReactState, GetLootState |
+| GameObject | 35+ | SetGoState, Use, Respawn, SetRespawnTime |
+| Unit | 50+ | GetHealth, SetPower, AddAura, GetDistanceTo |
+| Spell | 18+ | GetCaster, Cancel, GetTarget, IsPositiveSpell |
+| DB2 | 30+ | GetSpellName, GetItemName, GetMapName, HasDB2StoreEntry |
+| Database | 10+ | Query, Execute, EscapeString (Character/World/Login DB) |
+| Packet | 10+ | Read/Write uint/float/string/bits, SendPacketToPlayer |
+| Spawn | 15+ | SpawnCreature, ConfigureCreature, MoveRandom, ScheduleEvent |
 
-C++ fixes are submitted as pull requests via Github. For more information on how to
-properly submit a pull request, read the [how-to: maintain a remote fork](https://community.trinitycore.org/topic/9002-howto-maintain-a-remote-fork-for-pull-requests-tortoisegit/).
-For SQL only fixes, open a ticket; if a bug report exists for the bug, post on an existing ticket.
+For the complete API reference, see [angelscripts/README.md](AngelScript/angelscripts/README.md).
 
+## License
 
-## Copyright
-
-License: GPL 2.0
-
-Read file [COPYING](COPYING).
-
-
-## Authors &amp; Contributors
-
-Read file [AUTHORS](AUTHORS).
-
-
-## Links
-
-* [Website](https://www.trinitycore.org)
-* [Wiki](https://www.trinitycore.info)
-* [Forums](https://talk.trinitycore.org/)
-* [Discord](https://discord.trinitycore.org/)
+AngelCore is based on TrinityCore which is released under the GNU General Public License v2.
+The AngelScript SDK is released under the zlib license.
+All custom AngelScript code is provided as-is.

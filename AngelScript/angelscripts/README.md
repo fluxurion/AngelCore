@@ -1,125 +1,171 @@
-# AngelScript for TrinityCore
+# AngelScript for AngelCore
 
-AngelScript integration for TrinityCore — write game scripts in a C++-like scripting language with hot-reload support.
+AngelScript integration for AngelCore — write game scripts in a C++-like scripting language
+with hot-reload support, independent database, and in-game shop system.
 
 ## Quick Start
 
-1. Build the server with `ANGELSCRIPT_INTEGRATION` defined (enabled by default)
-2. Place `.as` script files in the `angelscripts/` directory next to your worldserver binary
-3. Use `.reload angelscript` in-game to reload all scripts, or `.reload angelscript <name>` to reload a single script
+1. Build the server — AngelScript is enabled by default
+2. `.as` scripts in the `angelscripts/` folder are auto-loaded on startup
+3. Use `#rel as` in game or console to reload all scripts
 
 ## Architecture
 
 ```
-AngelScript/
-├── AngelScriptMgr.cpp/h    — Engine lifecycle, script loading, hook dispatch
-├── API/                     — Per-type API registration files
-│   ├── ASPlayerAPI          — Player methods (45+)
-│   ├── ASCreatureAPI        — Creature methods (55+)
-│   ├── ASGameObjectAPI      — GameObject methods (35+)
-│   ├── ASUnitAPI            — Unit methods (50+)
-│   ├── ASSpellAPI           — Spell methods (18+)
-│   ├── ASGlobalFunctions    — Print, SendSystemMessage, FindPlayer, World accessors, Math
-│   ├── ASDatabaseAPI        — MySQL query/execute (Character/World/Login DB)
-│   ├── ASDB2API             — DB2 data store access (shared from TC)
-│   ├── ASGossipAPI          — NPC gossip menu creation
-│   └── ASPacketAPI          — Packet read/write/bits + SendPacket
-├── Dispatch/                — TC ScriptObject subclasses (route through sScriptMgr)
-├── Hooks/                   — Hook managers (per-type hook storage)
-├── SDK/                     — AngelScript SDK (compiler, VM)
-└── angelscripts/            — Script files (.as)
-    ├── ScriptFramework.as   — Constants, hook types, helper functions
-    ├── Common.as            — Type aliases, math constants, utilities
-    └── examples/            — Example scripts
+angelscripts/
+├── Config.as                  — Global configuration (BattlePay, AngelDB, catch-up settings)
+├── ScriptFramework.as         — Constants, hook types, helper functions
+├── Common.as                  — Type aliases, math constants, utilities
+├── AngelDB/                   — SQL update system
+│   ├── pending/               — .sql files to execute on startup/reload
+│   ├── applied/               — executed files
+│   └── README.md              — AngelDB documentation
+├── battlepay/                 — In-game shop system
+│   ├── BattlePay.as           — Main module entry point
+│   ├── BattlePayEnums.as      — Result codes and constants
+│   ├── BattlePayData.as       — Product data loading from AngelDB
+│   ├── BattlePayDispatch.as   — Purchase dispatch logic
+│   ├── BattlePayPackets.as    — Packet builders (SMSG handlers)
+│   ├── BattlePayStubs.as      — Delivery functions (mounts, toys, spells, items)
+│   ├── BattlePayHooks.as      — Auth response, feature status, session init hooks
+│   ├── BattlePayCommands.as   — #bpay chat commands
+│   ├── BattlePayDelivery.as   — Mail-based item delivery
+│   └── CharacterServices.as   — Name/race/faction change services
+├── characters/                — Character systems
+│   ├── CharacterCatchUp.as    — Gear catch-up system
+│   └── CharacterUpgrade.as    — Character boost packages
+├── warband/                   — Warband groups system
+│   ├── warband_groups.as      — Warband group CRUD and char enum integration
+│   └── warband_scene_unlock.as — Warband scene unlock management
+└── examples/                  — Example scripts by category
 ```
 
-## Script Defense Mechanism
+## Commands
 
-The AngelScript compiler rejects problematic scripts and reports detailed errors to the console:
+All AngelScript commands use `#` prefix and work from both in-game chat and server console:
 
-- **Syntax errors**: Line number, column, and description of the parse error
-- **Undefined types/functions**: Reports which symbol is missing and where it was referenced
-- **Type mismatches**: Reports expected vs actual type in assignments/calls
-- **Compile failures**: The failed module is discarded — it won't pollute the engine
-- **Runtime errors**: If `main()` or `RegisterHooks()` fails during execution, it's logged with the script name
+| Command | Description |
+|---|---|
+| `#rel as` | Reload all AngelScript scripts |
+| `#bpay credits` | View your BattlePay credit balance |
+| `#bpay addcredits <amount> [player]` | Add credits to yourself or another player |
+| `#bpay product <id> [player]` | Deliver a product to yourself or another player |
+| `#bpay service <namechange\|factionchange\|racechange>` | Apply a character service |
+| `#bpay reload` | Reload BattlePay product data from database |
+| `#bpay info` | Show loaded product count and shop status |
+| `#bpay gear [level] [player]` | Request gear catch-up |
+| `#bpay upgrade [player]` | Apply character upgrade package |
 
-Console output format:
+## AngelDB — Independent Database
+
+All script data lives in a separate MySQL database (`angelcore_scripts` by default).
+Credentials are read from `worldserver.conf` — the same MySQL server as TC's databases.
+
+### SQL Update System
+
+Place `.sql` files in `AngelDB/pending/` — they run automatically on startup/reload:
+
 ```
-[AS-ERR] my_script.as(15): Function 'SendFloatingText' not found
-[AS-WRN] my_script.as(20): Implicit conversion from 'int' to 'float'
-[DEFENSE] Script 'my_script.as' failed to compile (1 errors, 1 warnings):
-  ERROR: my_script.as(15): Function 'SendFloatingText' not found
+AngelDB/
+├── pending/     — 0001_battlepay_world.sql, 0002_battlepay_transactions.sql, ...
+└── applied/     — successfully executed files are moved here
 ```
 
-Failed scripts are **not loaded** — they cannot crash or corrupt the server.
+- Files execute in alphabetical order
+- Successful → moved to `applied/`
+- Failed → stays in `pending/` (check server logs)
+- `CREATE TABLE IF NOT EXISTS` and `INSERT IGNORE` are idempotent — safe to re-run
 
-## Shared Headers
+### AngelScript API
 
-### ScriptFramework.as
-Include this in every script for constants and helpers:
 ```angelscript
-#include "../ScriptFramework.as"
+AngelDB_Query("SELECT ...")         // Returns AngelDBResult (value type)
+AngelDB_Execute("INSERT ...")       // Returns bool
+AngelDB_EscapeString("input")       // Returns escaped string
+AngelDB_IsConnected()               // Returns bool
+AngelDB_GetLastError()              // Returns error string
+AngelDB_RunPendingUpdates("path")   // Manual trigger, returns count
 ```
 
-Provides:
-- Hook type constants (`PLAYER_ON_LOGIN`, `CREATURE_ON_DEATH`, etc.)
-- Power type constants (`POWER_MANA`, `POWER_RAGE`, etc.)
-- Class/race/team constants
-- Item class constants, spell school masks
-- DB2 store name constants (`DB2_STORE_SPELL_NAME`, `DB2_STORE_ITEM`, etc.)
-- Helper functions: `GetTeam()`, `GiveXP()`, `SendFloatingText()`, `PlaySoundToPlayer()`
+### AngelDBResult (value type, no null check needed)
 
-### Common.as
 ```angelscript
-#include "../Common.as"
+AngelDBResult r = AngelDB_Query("SELECT id, name FROM spawns WHERE map = 0");
+if (r.GetRowCount() > 0)              // Check if rows exist
+{
+    while (r.NextRow())               // Iterate rows
+    {
+        uint32 id = r.GetUInt32(0);    // Column 0 as uint32
+        string name = r.GetString(1);   // Column 1 as string
+        float x = r.GetFloat(2);        // Column 2 as float
+    }
+}
 ```
-Provides type aliases, math constants (PI, DEG2RAD), utility functions.
+
+## BattlePay Shop System
+
+Fully functional in-game shop with product listings, purchase flow, and delivery.
+
+### Tables (in AngelDB)
+
+| Table | Purpose |
+|---|---|
+| `battlepay_display_infos` | Visual display metadata (icons, descriptions, previews) |
+| `battlepay_product_infos` | Product listings (prices, flags, deliverable IDs) |
+| `battlepay_product_datas` | Deliverable products (items, mounts, pets, services) |
+| `battlepay_shop_datas` | Shop layout (grouping, ordering, flags) |
+| `battlepay_groups` | Category groups |
+| `battlepay_credits` | Per-account credit balance |
+| `battlepay_purchases` | Purchase history |
+| `battlepay_distributions` | Offline delivery queue |
+| `battlepay_pending_rewards` | Pending mail/SQL rewards |
+| `character_catchup_requests` | Gear catch-up queue |
+| `battlepay_guild_services` | Guild service tracking |
+
+### Configuration (`Config.as`)
+
+```angelscript
+bool   CONFIG_BPAY_STORE_ENABLED = true;       // Enable shop
+uint32 CONFIG_BPAY_STORE_CURRENCY = 3;          // Currency ID (3 = BattleCoins)
+string CONFIG_ANGELDB_DATABASE = "angelcore_scripts";  // AngelDB name
+string CONFIG_ANGELDB_UPDATES_DIR = "AngelDB";  // Updates folder
+```
+
+## Warband Groups System
+
+Character grouping system for the Warband character selection screen.
+
+### Tables (in AngelDB)
+
+| Table | Purpose |
+|---|---|
+| `warband_groups` | Group definitions per account (name, scene, order) |
+| `warband_group_members` | Character-to-group assignments |
+
+Scripts auto-create a "Favorites" group per account and integrate with the character
+enumeration packet to display groups on the character selection screen.
 
 ## Hook Registration
 
 ```angelscript
-#include "../ScriptFramework.as"
+#include "ScriptFramework.as"
 
-void OnLogin(Player@ player)
-{
-    SendSystemMessage(player, "Welcome!");
-}
-
-void main()
-{
-    RegisterPlayerScript(PLAYER_ON_LOGIN, @OnLogin);
-}
+void OnLogin(Player@ player) { SendSystemMessage(player, "Welcome!"); }
+void main() { RegisterPlayerScript(PLAYER_ON_LOGIN, @OnLogin); }
 ```
 
 ### Available Hook Types
 
-| Category | Constants | Registration Function |
-|----------|-----------|----------------------|
+| Category | Constants | Registration |
+|---|---|---|
 | World | `WORLD_ON_STARTUP`, `WORLD_ON_SHUTDOWN`, `WORLD_ON_UPDATE`, `WORLD_ON_CONFIG_LOAD` | `RegisterWorldScript()` |
-| Console | `WORLD_ON_CONSOLE_COMMAND` | `RegisterConsoleCommandHook()` - receives command string |
-| Player | `PLAYER_ON_LOGIN`, `PLAYER_ON_LOGOUT`, `PLAYER_ON_CHAT`, `PLAYER_ON_LEVEL_UP`, `PLAYER_ON_DEATH`, `PLAYER_ON_KILL_CREATURE`, `PLAYER_ON_KILL_PLAYER`, `PLAYER_ON_KILLED_BY_CREATURE`, `PLAYER_ON_DUEL_START`, `PLAYER_ON_DUEL_END`, `PLAYER_ON_MONEY_CHANGE`, `PLAYER_ON_GIVE_XP`, `PLAYER_ON_REPUTATION_CHANGE`, `PLAYER_ON_UPDATE_ZONE`, `PLAYER_ON_MAP_CHANGE` | `RegisterPlayerScript()` |
+| Console | `WORLD_ON_CONSOLE_COMMAND` | `RegisterConsoleCommandHook()` |
+| Player | `PLAYER_ON_LOGIN`, `PLAYER_ON_LOGOUT`, `PLAYER_ON_CHAT`, `PLAYER_ON_LEVEL_UP`, `PLAYER_ON_DEATH`, `PLAYER_ON_KILL_CREATURE`, `PLAYER_ON_KILL_PLAYER`, `PLAYER_ON_DUEL_START`, `PLAYER_ON_DUEL_END`, `PLAYER_ON_MONEY_CHANGE`, `PLAYER_ON_GIVE_XP`, `PLAYER_ON_REPUTATION_CHANGE`, `PLAYER_ON_UPDATE_ZONE`, `PLAYER_ON_MAP_CHANGE` | `RegisterPlayerScript()` |
 | Creature | `CREATURE_ON_SPAWN`, `CREATURE_ON_DEATH`, `CREATURE_ON_ENTER_COMBAT`, `CREATURE_ON_LEAVE_COMBAT`, `CREATURE_ON_DAMAGE`, `CREATURE_ON_GOSSIP_HELLO`, `CREATURE_ON_GOSSIP_SELECT` | `RegisterCreatureScript()` |
 | GameObject | `GO_ON_SPAWN`, `GO_ON_USE`, `GO_ON_DESTROY`, `GO_ON_GOSSIP_HELLO`, `GO_ON_GOSSIP_SELECT` | `RegisterGameObjectScript()` |
-| Spell | `SPELL_ON_CAST`, `SPELL_ON_HIT`, `SPELL_ON_EFFECT`, `SPELL_ON_EFFECT_HIT`, `SPELL_ON_CHECK_CAST` | `RegisterSpellHook()` |
-| Quest | `QUEST_ON_ACCEPT`, `QUEST_ON_COMPLETE`, `QUEST_ON_REWARD`, `QUEST_ON_STATUS_CHANGE`, `QUEST_ON_OBJECTIVE_UPDATE` | `RegisterQuestScript()` |
+| Spell | `SPELL_ON_CAST`, `SPELL_ON_HIT`, `SPELL_ON_EFFECT_HIT`, `SPELL_ON_CHECK_CAST` | `RegisterSpellHook()` |
+| Quest | `QUEST_ON_ACCEPT`, `QUEST_ON_COMPLETE`, `QUEST_ON_REWARD` | `RegisterQuestScript()` |
 | Packet | `PACKET_ON_RECEIVE`, `PACKET_ON_SEND` | `RegisterPacketScript()` |
-| Instance | Instance hooks | `RegisterInstanceScript()` |
-| Battleground | BG hooks | `RegisterBattlegroundScript()` |
-
-### Per-Entry Dispatch
-
-Creature and GameObject AI can be registered per-entry:
-```angelscript
-// Register a creature AI factory for entry 1234
-RegisterCreatureAI(1234, @MyCreatureAIFactory);
-```
-
-### Spell Effect Handlers
-
-Override specific spell effects:
-```angelscript
-RegisterSpellEffectHandler(133, 0, @OnFireballEffect);  // Spell 133, effect 0
-```
 
 ## API Reference
 
@@ -130,197 +176,73 @@ IsAlive, IsDead, IsInCombat, IsOnline, IsAFK, IsDND, IsGM, SetGM, IsMounted
 GetMapId, GetZoneId, GetAreaId, GetPositionXYZO
 TeleportTo, GetHealth, GetMaxHealth, GetHealthPct
 GetMoney, ModifyMoney, GetItemCount, HasItemCount, AddItem
-GetPower, SetPower, GetQuestStatus, IsQuestRewarded, CompleteQuest, FailQuest
+GetPower, SetPower, GetQuestStatus, CompleteQuest, FailQuest
 GetReputation, SetReputation, GetGuildId, GetAccountId, GetAccountName
-SendNotification, HasAura, AddAura, RemoveAura, RemoveAllAuras
-CastSpell, CastSpellSelf, ToCreature, Kill, GiveXP
+SendNotification, HasAura, AddAura, RemoveAura, CastSpell, Kill, GiveXP
 ```
 
 ### Creature (55+ methods)
 ```
-GetName, GetEntry, GetGUID, GetSpawnId, GetLevel
-IsAlive, IsDead, IsInCombat, IsInCombatWith, CanHaveThreatList
-SetInCombatWith, GetHealth, GetMaxHealth, SetHealth, SetFullHealth, GetHealthPct
-HasAura, GetReactState, SetReactState, HasLootRecipient, IsTappedBy, HasQuest
+GetName, GetEntry, GetGUID, GetLevel, IsAlive, IsDead, IsInCombat
+SetInCombatWith, GetHealth, SetHealth, SetFullHealth, GetHealthPct
+HasAura, GetReactState, SetReactState, HasQuest
 Respawn, DespawnOrUnsummon, GetFaction, IsFriendlyTo, IsHostileTo
-GetMapId, GetPositionXYZO, AttackStart, CastSpell, CastSpellSelf
-AddAura, RemoveAura, ToPlayer, Kill
-```
-
-### GameObject (35+ methods)
-```
-GetName, GetEntry, GetGUID, GetDisplayId, GetGoType
-IsSpawned, IsTransport, GetLootState, GetGoState, SetGoState
-SetRespawnTime, Respawn, GetFaction, GetMapId, GetPositionXYZO
-Use, Delete, Despawn, Enable, Disable, SetFlags, HasFlags
-```
-
-### Unit (50+ methods)
-```
-GetName, GetLevel, GetClass, GetRace, GetGender, GetGUID
-IsAlive, IsDead, IsInCombat, IsMounted
-GetHealth, GetMaxHealth, SetHealth, SetFullHealth, GetHealthPct
-GetPower, GetMaxPower, SetPower, HasAura, GetAuraCount
-RemoveAura, RemoveAllAuras, GetFaction, IsFriendlyTo, IsHostileTo
-HasUnitFlag, GetDistanceTo, IsWithinDist, GetMapId, GetPositionXYZO
-CastSpell, CastSpellSelf, AddAura, ToPlayer, ToCreature, Kill
-```
-
-### Spell (18+ methods)
-```
-GetSpellId, GetCaster, GetOriginalCaster, GetCastTime
-Cancel, Finish, IsTriggered, IsChannelActive
-GetTarget, GetUnitTarget, GetItemTarget, GetGOTarget
-GetRange, IsPositiveSpell, HasEffectType
+GetMapId, GetPositionXYZO, AttackStart, CastSpell, AddAura, Kill
 ```
 
 ### Global Functions
 ```
-Print(msg)                          — Log to console
-SendSystemMessage(player, msg)      — Send system message to player
-SendFloatingText(player, text, color) — Floating text (falls back to system message)
-PlaySoundToPlayer(player, soundId)  — Play sound kit to player
-FindPlayerByName(name)              — Find online player by name
-FindPlayerByGUID(guid)              — Find player by GUID counter
-GetGameTime()                       — Current game time
-GetRealmID(), GetRealmName()        — Realm info
-GetMapById(mapId)                   — Get map instance
+Print(msg)                              — Log to console
+SendSystemMessage(player, msg)          — System message to player
+FindPlayerByName(name)                  — Find online player
+FindPlayerByGUID(guid)                  — Find player by GUID
+GetGameTime()                           — Current game time
 ```
 
 ### DB2 Data Access
-
-TrinityCore loads all DB2 data at server startup. AngelScript shares the same data — no custom loading needed.
-
 ```angelscript
-// Spell data
-string name = GetSpellName(133);
-uint32 school = GetSpellSchool(133);
-bool exists = HasSpellDB(133);
-
-// Item data
-string itemName = GetItemName(17349);
-uint32 itemClass = GetItemClass(17349);
-bool isToy = IsToyItem(17349);
-
-// Map & Area data
-string mapName = GetMapName(0);
-bool isRaid = IsRaidMap(532);
-string areaName = GetAreaName(1519);
-
-// Race/Class/Faction data
-string className = GetClassName(1);
-string raceName = GetRaceName(1);
-string factionName = GetFactionName(1);
-
-// Curve values (spell scaling, XP tables, etc.)
-float value = GetCurveValue(1234, 1.0f);
-
-// Broadcast text
-string text = GetBroadcastText(12345);
-
-// Generic store queries
-uint32 count = GetDB2StoreEntryCount(DB2_STORE_SPELL_NAME);
-bool hasEntry = HasDB2StoreEntry(DB2_STORE_ITEM, 17349);
+GetSpellName(133)           // "Fireball"
+GetItemName(17349)          // Item name
+GetMapName(0)               // "Eastern Kingdoms"
+GetClassName(1)             // "Warrior"
+GetRaceName(1)              // "Human"
+HasDB2StoreEntry("Item", 17349)
 ```
 
-Available DB2 functions:
-```
-GetSpellName, GetSpellSchool, GetSpellCastTimeDB, GetSpellDurationDB, HasSpellDB
-GetItemName, GetItemClass, GetItemSubClass, GetItemInventoryType, HasItemDB, IsToyItem
-GetCreatureDisplayScale, GetCreatureDisplayModel, HasCreatureDisplayDB
-GetMapName, GetMapAreaId, IsDungeonMap, IsRaidMap, IsBattlegroundMap
-GetAreaName, GetAreaParentAreaId, GetAreaMapId
-GetFactionName, GetFactionTemplateFaction, GetFactionTemplateFlags
-GetClassName, GetRaceName, GetRaceFactionId
-GetSkillName, GetEmoteAnimState, GetDifficultyName, GetCharTitleName
-GetCurveValue, GetBroadcastText, GetCreatureFamilyPetName
-GetGlobalCurveId
-GetDB2StoreEntryCount, HasDB2StoreEntry
-```
-
-### Database API (MySQL)
-
-Execute queries and statements against TC's databases:
+### Database API (for TC databases — use AngelDB for script data)
 ```angelscript
-// Execute SQL (non-query — INSERT/UPDATE/DELETE)
-CharacterExecute("INSERT INTO custom_table (player_id, value) VALUES (1, 100)");
-WorldExecute("UPDATE custom_config SET value = 1 WHERE key = 'feature'");
-
-// Query (returns QueryResult handle — currently async-limited)
-QueryResult@ result = CharacterQuery("SELECT * FROM custom_table WHERE player_id = 1");
-if (result !is null)
-{
-    while (result.NextRow())
-    {
-        string val = result.GetString(0);
-        int32 num = result.GetInt32(1);
-    }
-}
-
-// Prepared statement by index
-CharacterPreparedStatementExecute(1);
+CharacterQuery("SELECT ...")
+CharacterExecute("INSERT ...")
+WorldQuery("SELECT ...")
+WorldExecute("UPDATE ...")
 ```
 
-### Gossip API
-
-Create NPC gossip menus from scripts:
+### Spawn API
 ```angelscript
-void OnGossipHello(Creature@ creature, Player@ player)
-{
-    GossipStartMenu(player, creature, "Welcome! What would you like?");
-    GossipAddMenuItem(player, 1, "Tell me about this place");
-    GossipAddMenuItem(player, 2, "I want to fight!");
-    GossipSendMenu(player);
-}
+SpawnCreature(entry, map, x, y, z, o, phaseId)
+SpawnGameObject(entry, map, x, y, z, o, phaseId)
+ConfigureCreature(creature, level, faction, npcFlags, gossip, equip, react)
+DespawnCreature(creature)
 ```
 
-### Packet API
+## Defense Mechanism
 
-Read and write custom packets:
-```angelscript
-// Read a received packet
-void OnPacketReceive(WorldSession@ session, uint32 opcode, uint32 size)
-{
-    // PacketData reading: ReadUInt8/16/32/64, ReadString, ReadBit, ReadBits
-    // PacketData writing: WriteUInt8/16/32/64, WriteString, WriteBit, WriteBits
-    return false; // not handled
-}
+Failed scripts are **rejected** — they cannot crash or corrupt the server:
 
-// Send a custom packet to a player
-void SendCustomPacket(Player@ player, uint32 opcode)
-{
-    PacketData@ data = CreatePacketData(opcode);
-    data.WriteUInt32(player.GetGUID().GetCounter());
-    data.WriteString("Hello");
-    SendPacketToPlayer(player, data);
-}
+```
+[AS-ERR] script.as(15): Function 'MissingFunc' not found
+[DEFENSE] Script 'script.as' failed to compile (1 errors)
 ```
 
-## Reload Command
-
-| Command | Description |
-|---------|-------------|
-| `.reload angelscript` | Reload all `.as` scripts from the angelscripts directory |
-| `.reload angelscript <name>` | Reload a specific script by filename |
-
-Reload recompiles the script with full defense mechanism — errors are reported and the script is rejected if compilation fails. Existing hooks from the old version are preserved until the new version registers its own.
-
-## Example Scripts
-
-| File | Description |
-|------|-------------|
-| `simple_spell_example.as` | Spell effect handlers, spell hooks, teleport by faction |
-| `simple_instance_example.as` | Instance enter/leave, boss kill tracking |
-| `simple_battleground_example.as` | BG start, player join, kill tracking |
-| `db2_data_example.as` | DB2 data access: spells, items, maps, areas, factions, curves |
+- Syntax errors reported with file name + line number
+- Type mismatches caught at compile time
+- Runtime exceptions logged with stack trace
+- Failed module is discarded, existing hooks preserved
 
 ## Notes
 
-- Scripts are compiled at load time — syntax errors are caught and reported with line numbers
-- Failed scripts are **rejected** — they cannot crash or corrupt the server
-- All hook callbacks should check for null pointers before using objects
-- AngelScript runs in the main server thread — avoid blocking operations
-- Keep heavy operations out of `WORLD_ON_UPDATE` as it runs every tick
-- Return values matter for `PACKET_ON_RECEIVE` (true = handled) and spell check hooks
-- DB2 data is shared from TrinityCore — no custom loading needed, always up-to-date
-- The `angelscripts/` folder is created automatically at build time
+- Scripts run on the main server thread — avoid blocking operations
+- AngelDB queries use a separate MySQL connection (doesn't block TC's pool)
+- `#` prefix commands are intercepted before chat broadcast
+- `AngelDBResult` is a value type — check `GetRowCount() > 0` instead of `is null`
+- DB2 data is shared from TrinityCore — always up-to-date, no custom loading needed
