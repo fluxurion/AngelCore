@@ -103,6 +103,12 @@ namespace AngelScript
     }
 
     // ---- Warband Group helpers ----
+    static bool EnumResult_IsDeletedCharacters(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return false;
+        return result->IsDeletedCharacters;
+    }
+
     static void EnumResult_ClearWarbandGroups(WorldPackets::Character::EnumCharactersResult* result)
     {
         if (!result) return;
@@ -171,6 +177,7 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ FindCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindCharacterByGuid), asCALL_CDECL_OBJFIRST);
 
         // Warband group methods
+        engine->RegisterObjectMethod("EnumCharactersResult", "bool IsDeletedCharacters()", asFUNCTION(EnumResult_IsDeletedCharacters), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearWarbandGroups()", asFUNCTION(EnumResult_ClearWarbandGroups), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetWarbandGroupCount()", asFUNCTION(EnumResult_GetWarbandGroupCount), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroup(uint64 groupId, uint8 orderIndex, uint32 warbandSceneId, uint32 flags, int32 contentSetID, const string& in name)", asFUNCTION(EnumResult_AddWarbandGroup), asCALL_CDECL_OBJFIRST);

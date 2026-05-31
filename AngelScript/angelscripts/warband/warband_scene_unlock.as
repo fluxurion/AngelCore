@@ -23,6 +23,10 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
         return;
     }
 
+    // Skip deleted-characters enum — only process the normal char list
+    if (enumResult !is null && enumResult.IsDeletedCharacters())
+        return;
+
     uint32 bnetId = session.GetBattlenetAccountId();
     string bnetStr = "" + bnetId;
 

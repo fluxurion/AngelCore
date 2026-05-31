@@ -252,10 +252,14 @@ void EnsureFavoritesGroup(uint32 accountId)
         return; // already present under this id
 
     // Insert the Favorites group row (orderIndex 0 = first position)
-    AngelDB_Execute(
+    bool groupInserted = AngelDB_Execute(
         "INSERT IGNORE INTO `warband_groups` (`accountId`,`groupId`,`orderIndex`,`warbandSceneId`,`flags`,`name`) VALUES (" +
         accountStr + "," + groupId + ",0," + FAVORITES_WARBAND_SCENE_ID + ",0,'" + FAVORITES_GROUP_NAME + "')"
     );
+    if (!groupInserted)
+        Print(AS_COLOR_RED + "[Warband] EnsureFavoritesGroup: INSERT into warband_groups FAILED for account=" + accountId + " groupId=" + groupId + " error=" + AngelDB_GetLastError() + AS_COLOR_RESET);
+    else
+        Print(AS_COLOR_GREEN + "[Warband] EnsureFavoritesGroup: Inserted Favorites group for account=" + accountId + AS_COLOR_RESET);
 
     // Insert members at sequential slot indices
     uint32 slot = 0;
@@ -276,6 +280,10 @@ void EnsureFavoritesGroup(uint32 accountId)
 void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
 {
     if (session is null || enumResult is null)
+        return;
+
+    // Skip deleted-characters enum — only process the normal char list
+    if (enumResult.IsDeletedCharacters())
         return;
 
     uint32 accountId = session.GetAccountId();
