@@ -14,7 +14,6 @@
 
 void LoadAngelScriptConfig()
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] Config loaded (stub)" + AS_COLOR_RESET);
 }
 
 // ============================================================================
@@ -42,31 +41,26 @@ bool HandleGetPurchaseList(WorldSession@ session, PacketData@ packet)
 
 bool HandleStartPurchase(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleStartPurchase called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool HandleConfirmPurchaseResponse(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleConfirmPurchaseResponse called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool HandleAckFailedResponse(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleAckFailedResponse called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool HandleDistributionAssignToTarget(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleDistributionAssignToTarget called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool HandleDistributionAssignVas(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleDistributionAssignVas called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
@@ -81,19 +75,16 @@ bool HandleOpenCheckout(WorldSession@ session, PacketData@ packet)
 
 bool HandleCancelOpenCheckout(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleCancelOpenCheckout called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool HandleRequestPriceInfo(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleRequestPriceInfo called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool HandleStartVasPurchase(WorldSession@ session, PacketData@ packet)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] HandleStartVasPurchase called (stub)" + AS_COLOR_RESET);
     return true;
 }
 
@@ -210,7 +201,6 @@ bool DeliverTransmogAppearance(uint32 accountId, uint32 transmogSetID)
 
 void AddCredits(uint32 accountID, int64 amount)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] AddCredits: account=" + accountID + " amount=" + amount + " (stub)" + AS_COLOR_RESET);
 }
 
 int64 GetCredits(uint32 accountID)
@@ -259,42 +249,36 @@ WorldSession@ GetSession(uint32 accountID)
 bool DeliverItem(Player@ player, uint32 itemID, uint32 count)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverItem: player=" + player.GetName() + " item=" + itemID + " count=" + count + " (stub)" + AS_COLOR_RESET);
     return player.AddItem(itemID, count);
 }
 
 bool DeliverMount(Player@ player, uint32 spellID)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverMount: player=" + player.GetName() + " spell=" + spellID + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool DeliverBattlePet(Player@ player, uint32 speciesID)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverBattlePet: player=" + player.GetName() + " species=" + speciesID + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool DeliverToy(Player@ player, uint32 itemID)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverToy: player=" + player.GetName() + " item=" + itemID + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool DeliverTransmogAppearance(Player@ player, uint32 itemModifiedAppearanceID)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverTransmog: player=" + player.GetName() + " appearance=" + itemModifiedAppearanceID + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool DeliverGold(Player@ player, uint64 amount)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverGold: player=" + player.GetName() + " amount=" + amount + " (stub)" + AS_COLOR_RESET);
     player.AddMoney(amount);
     return true;
 }
@@ -302,21 +286,18 @@ bool DeliverGold(Player@ player, uint64 amount)
 bool DeliverLevelBoost(Player@ player, uint32 targetLevel, uint32 boostType)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverLevelBoost: player=" + player.GetName() + " targetLevel=" + targetLevel + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool DeliverCharacterServices(Player@ player, uint32 serviceType, uint32 targetCharGuid)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverCharacterServices: player=" + player.GetName() + " service=" + serviceType + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
 bool DeliverGuildServices(Player@ player, uint32 serviceType)
 {
     if (player is null) return false;
-    Print(AS_COLOR_CYAN + "[BattlePay] DeliverGuildServices: player=" + player.GetName() + " service=" + serviceType + " (stub)" + AS_COLOR_RESET);
     return true;
 }
 
@@ -326,5 +307,5 @@ bool DeliverGuildServices(Player@ player, uint32 serviceType)
 
 void CharacterExecute(string sql)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] CharacterExecute (stub): " + sql.substr(0, 50) + "..." + AS_COLOR_RESET);
+    AngelDB_Execute(sql);
 }

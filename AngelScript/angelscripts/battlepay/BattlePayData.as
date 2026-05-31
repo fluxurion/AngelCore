@@ -337,12 +337,10 @@ bool LoadBattlePayData()
 {
     if (g_dataLoaded) return true;
 
-    Print(AS_COLOR_CYAN + "[BattlePay] Loading BattlePay data from database (new schema)..." + AS_COLOR_RESET);
-
-    // Sanity checks
+    // Sanity check
     AngelDBResult sanityCheck = AngelDB_Query("SELECT COUNT(*) FROM battlepay_display_infos");
-    if (sanityCheck.GetRowCount() == 0 && sanityCheck.NextRow())
-        Print(AS_COLOR_RED + "[BattlePay] SANITY: COUNT(*) query FAILED - table may not exist in WorldDatabase!" + AS_COLOR_RESET);
+    if (sanityCheck.GetRowCount() == 0)
+        PrintError("[BattlePay] display_infos table missing or empty in AngelDB!");
 
     // Load disabled products
     AngelDBResult result = AngelDB_Query("SELECT ProductID FROM battlepay_disabled_products");
@@ -540,17 +538,10 @@ bool LoadBattlePayData()
 
             g_displayInfos.insertLast(info);
         }
-        Print(AS_COLOR_CYAN + "[BattlePay] Loaded " + g_displayInfos.length() + " display_infos in batch" + AS_COLOR_RESET);
+        Print("[BattlePay] Loaded " + g_displayInfos.length() + " display_infos");
     }
     else
-        Print(AS_COLOR_RED + "[BattlePay] ERROR: AngelDB_Query returned no rows for display_infos batch load!" + AS_COLOR_RESET);
-
-    // Verify a few displays loaded correctly
-    for (uint i = 0; i < g_displayInfos.length() && i < 5; i++)
-        Print(AS_COLOR_CYAN + "[BattlePay] DISPLAY CHECK: SourceType=" + g_displayInfos[i].SourceType
-            + " SourceID=" + g_displayInfos[i].SourceID
-            + " Visuals=" + g_displayInfos[i].Visuals.length()
-            + " Title='" + g_displayInfos[i].Title + "'" + AS_COLOR_RESET);
+        PrintError("[BattlePay] AngelDB returned no rows for display_infos batch load!");
 
     // ========================================================================
     // LINK DISPLAYS - SourceType-based matching
@@ -594,9 +585,7 @@ bool LoadBattlePayData()
                 }
             }
             if (g_productInfos[i].Display is null)
-                Print(AS_COLOR_YELLOW + "[BattlePay] ProductInfo Entry=" + g_productInfos[i].Entry
-                    + " ShopListingID=" + g_productInfos[i].ShopListingID
-                    + " Display=NULL (no display with SourceType=1, SourceID=" + g_productInfos[i].ShopListingID + ")" + AS_COLOR_RESET);
+                PrintWarn("[BattlePay] ProductInfo Entry=" + g_productInfos[i].Entry + " has no display (ShopListingID=" + g_productInfos[i].ShopListingID + ")");
         }
     }
 
@@ -627,10 +616,6 @@ bool LoadBattlePayData()
                 if (g_productInfos[j].ShopListingID == g_shops[i].ShopListingID)
                 {
                     @g_shops[i].Display = g_productInfos[j].Display;
-                    if (g_shops[i].Display is null)
-                        Print(AS_COLOR_YELLOW + "[BattlePay] Shop Entry=" + g_shops[i].Entry
-                            + " Route B matched ProductInfo Entry=" + g_productInfos[j].Entry
-                            + " but Display is NULL" + AS_COLOR_RESET);
                     break;
                 }
             }
@@ -664,10 +649,7 @@ bool LoadBattlePayData()
 
         // Final status
         if (g_shops[i].Display is null)
-            Print(AS_COLOR_YELLOW + "[BattlePay] Shop Entry=" + g_shops[i].Entry
-                + " ShopEntryID=" + g_shops[i].ShopEntryID
-                + " ShopListingID=" + g_shops[i].ShopListingID
-                + " Display=NULL (no match)" + AS_COLOR_RESET);
+            PrintWarn("[BattlePay] Shop Entry=" + g_shops[i].Entry + " has no display (ShopEntryID=" + g_shops[i].ShopEntryID + ")");
     }
 
     // ========================================================================

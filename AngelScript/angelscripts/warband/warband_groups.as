@@ -257,9 +257,7 @@ void EnsureFavoritesGroup(uint32 accountId)
         accountStr + "," + groupId + ",0," + FAVORITES_WARBAND_SCENE_ID + ",0,'" + FAVORITES_GROUP_NAME + "')"
     );
     if (!groupInserted)
-        Print(AS_COLOR_RED + "[Warband] EnsureFavoritesGroup: INSERT into warband_groups FAILED for account=" + accountId + " groupId=" + groupId + " error=" + AngelDB_GetLastError() + AS_COLOR_RESET);
-    else
-        Print(AS_COLOR_GREEN + "[Warband] EnsureFavoritesGroup: Inserted Favorites group for account=" + accountId + AS_COLOR_RESET);
+        PrintError("[Warband] INSERT warband_groups FAILED account=" + accountId + " groupId=" + groupId + " err=" + AngelDB_GetLastError());
 
     // Insert members at sequential slot indices
     uint32 slot = 0;
@@ -287,8 +285,6 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
         return;
 
     uint32 accountId = session.GetAccountId();
-    Print(AS_COLOR_CYAN + "[Warband] OnCharEnum account=" + accountId + AS_COLOR_RESET);
-
     EnsureFavoritesGroup(accountId);
 
     enumResult.ClearWarbandGroups();
@@ -297,8 +293,6 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
         "SELECT `groupId`, `orderIndex`, `warbandSceneId`, `flags`, `name` " +
         "FROM `warband_groups` WHERE `accountId` = " + accountId + " ORDER BY `orderIndex`"
     );
-
-    Print(AS_COLOR_CYAN + "[Warband] Groups query returned " + groupsResult.GetRowCount() + " rows" + AS_COLOR_RESET);
 
     if (groupsResult.GetRowCount() == 0)
         return;
@@ -349,7 +343,5 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
 
 void main()
 {
-    Print(AS_COLOR_CYAN + "[Warband] Registering hooks..." + AS_COLOR_RESET);
     RegisterHooks();
-    Print(AS_COLOR_CYAN + "[Warband] Hooks registered" + AS_COLOR_RESET);
 }

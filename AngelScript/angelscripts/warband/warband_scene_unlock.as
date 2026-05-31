@@ -19,7 +19,7 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
 {
     if (session is null)
     {
-        Print(AS_COLOR_RED + "[WarbandSceneUnlock] OnCharEnum: session is null" + AS_COLOR_RESET);
+        PrintError("[WarbandSceneUnlock] OnCharEnum: session is null");
         return;
     }
 
@@ -33,11 +33,9 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
     array<uint32> sceneIds = GetAllWarbandSceneIds();
     uint32 totalCount = sceneIds.length();
 
-    Print(AS_COLOR_CYAN + "[WarbandSceneUnlock] OnCharEnum fired for account=" + bnetId + " sceneCount=" + totalCount + AS_COLOR_RESET);
-
     if (totalCount == 0)
     {
-        Print(AS_COLOR_YELLOW + "[WarbandSceneUnlock] Skipping: No scene IDs found in DB2" + AS_COLOR_RESET);
+        PrintWarn("[WarbandSceneUnlock] No WarbandScene DB2 IDs found — skipping");
         return;
     }
 
@@ -76,7 +74,7 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
     }
 
     if (inserted > 0)
-        Print(AS_COLOR_GREEN + "[WarbandSceneUnlock] Inserted " + inserted + " new scenes for account " + bnetId + AS_COLOR_RESET);
+        Print("[WarbandSceneUnlock] Inserted " + inserted + " new scenes for account " + bnetId);
 
     // 3. Send SMSG_ACCOUNT_WARBAND_SCENE_UPDATE
     PacketData@ pkt = CreatePacketData(SMSG_ACCOUNT_WARBAND_SCENE_UPDATE);
@@ -96,7 +94,6 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
 
     pkt.FlushBits();
     session.SendPacket(pkt);
-    Print(AS_COLOR_GREEN + "[WarbandSceneUnlock] Packet sent to session" + AS_COLOR_RESET);
 }
 
 // ============================================================
@@ -105,7 +102,6 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
 
 void main()
 {
-    Print(AS_COLOR_CYAN + "[WarbandSceneUnlock] Script loaded" + AS_COLOR_RESET);
     RegisterWarbandSceneDB2();
     RegisterCharEnumHook(@OnCharEnum);
 }

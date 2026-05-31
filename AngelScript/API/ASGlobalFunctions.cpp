@@ -57,6 +57,16 @@ namespace AngelScript
         TC_LOG_INFO("server.angelscript", "{}", msg);
     }
 
+    static void Global_PrintWarn(const std::string& msg)
+    {
+        TC_LOG_WARN("server.angelscript", "{}", msg);
+    }
+
+    static void Global_PrintError(const std::string& msg)
+    {
+        TC_LOG_ERROR("server.angelscript", "{}", msg);
+    }
+
     static void Global_SendSystemMessage(Player* player, const std::string& msg)
     {
         if (player && player->GetSession())
@@ -215,6 +225,8 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("void Print(const string& in)", asFUNCTION(Global_Print), asCALL_CDECL);
         if (r < 0)
             TC_LOG_ERROR("server.angelscript", "RegisterGlobalFunction Print failed: {}", r);
+        r = _scriptEngine->RegisterGlobalFunction("void PrintWarn(const string& in)", asFUNCTION(Global_PrintWarn), asCALL_CDECL);
+        r = _scriptEngine->RegisterGlobalFunction("void PrintError(const string& in)", asFUNCTION(Global_PrintError), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("void SendSystemMessage(Player@, const string& in)", asFUNCTION(Global_SendSystemMessage), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("void SendFloatingText(Player@, const string& in, uint32)", asFUNCTION(Global_SendFloatingText), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("void PlaySoundToPlayer(Player@, uint32)", asFUNCTION(Global_PlaySoundToPlayer), asCALL_CDECL);

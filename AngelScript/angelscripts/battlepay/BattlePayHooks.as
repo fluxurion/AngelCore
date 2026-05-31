@@ -20,7 +20,6 @@
 // Called from C++: AngelScriptMgr::TriggerCustomHook_AuthResponse()
 uint32 OnAuthResponse(uint32 sessionID, uint32 currencyID)
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] AuthResponse hook - setting CurrencyID to: " + CONFIG_BPAY_STORE_CURRENCY + AS_COLOR_RESET);
     return CONFIG_BPAY_STORE_CURRENCY;
 }
 
@@ -50,8 +49,6 @@ void OnSessionInitialized(WorldSession@ session)
     if (session is null)
         return;
 
-    Print(AS_COLOR_CYAN + "[BattlePay] SessionInitialized hook - sending store init packets" + AS_COLOR_RESET);
-
     // SMSG_DISPLAY_PROMOTION - clear promotion popup
     SendPromotion(session);
 
@@ -79,8 +76,6 @@ void OnSessionInitialized(WorldSession@ session)
 // ============================================================================
 void RegisterBattlePayHooks()
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] Registering packet hooks..." + AS_COLOR_RESET);
-
     // Register the hooks with AngelScript manager
     // These functions are registered by C++ API in ASWorldAPI.cpp
     // Use @ to get function handle
@@ -89,5 +84,4 @@ void RegisterBattlePayHooks()
     RegisterFeatureSystemStatusHook(@OnFeatureSystemStatus);
     RegisterSessionInitializedHook(@OnSessionInitialized);
 
-    Print(AS_COLOR_GREEN + "[BattlePay] Packet hooks registered successfully" + AS_COLOR_RESET);
 }

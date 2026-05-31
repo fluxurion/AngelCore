@@ -23,13 +23,9 @@
 
 void OnStartup()
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] BattlePay system initializing..." + AS_COLOR_RESET);
     LoadAngelScriptConfig();
-
-    // Register packet hooks for AuthResponse and FeatureSystemStatusGlueScreen
     RegisterBattlePayHooks();
     LoadBattlePayData();
-    Print(AS_COLOR_GREEN + "[BattlePay] BattlePay system initialized successfully" + AS_COLOR_RESET);
 }
 
 void OnPlayerLogin(Player@ player)
@@ -53,9 +49,6 @@ void OnPlayerLogin(Player@ player)
             uint64 distributionID = result.GetUInt64(0);
             uint64 purchaseID = result.GetUInt64(1);
             uint32 productID = result.GetUInt32(2);
-
-            Print(AS_COLOR_CYAN + "[BattlePay] Processing pending distribution " + distributionID +
-                  " for player " + player.GetName() + AS_COLOR_RESET);
 
             for (uint i = 0; i < g_productDatas.length(); i++)
             {
@@ -84,9 +77,6 @@ void OnPlayerLogin(Player@ player)
             string rewardType = result.GetString(1);
             uint32 rewardIdValue = result.GetUInt32(2);
             uint32 rewardAmount = result.GetUInt32(3);
-
-            Print(AS_COLOR_CYAN + "[BattlePay] Processing pending reward " + rewardId + " type " + rewardType +
-                  " for player " + player.GetName() + AS_COLOR_RESET);
 
             bool delivered = false;
 
@@ -117,12 +107,12 @@ void OnPlayerLogin(Player@ player)
             if (delivered)
             {
                 AngelDB_Execute("UPDATE battlepay_pending_rewards SET status = 1, delivered_at = NOW() WHERE id = " + rewardId);
-                Print(AS_COLOR_GREEN + "[BattlePay] Reward " + rewardId + " delivered successfully" + AS_COLOR_RESET);
+                Print("[BattlePay] Reward " + rewardId + " delivered to " + player.GetName());
             }
             else
             {
                 AngelDB_Execute("UPDATE battlepay_pending_rewards SET status = 2 WHERE id = " + rewardId);
-                Print(AS_COLOR_RED + "[BattlePay] Reward " + rewardId + " delivery failed" + AS_COLOR_RESET);
+                PrintError("[BattlePay] Reward " + rewardId + " delivery FAILED for " + player.GetName());
             }
         }
     }
@@ -140,8 +130,6 @@ void OnPlayerLogin(Player@ player)
 
 void main()
 {
-    Print(AS_COLOR_CYAN + "[BattlePay] Registering BattlePay opcode handlers..." + AS_COLOR_RESET);
-
     // Register all BattlePay opcode handlers
     RegisterOpcodeHandler(CMSG_BATTLE_PAY_GET_PRODUCT_LIST, @HandleGetProductList, true);
     RegisterOpcodeHandler(CMSG_BATTLE_PAY_GET_PURCHASE_LIST, @HandleGetPurchaseList, true);
@@ -170,5 +158,5 @@ void main()
     // Run initialization immediately (also covers rel as reloads)
     OnStartup();
 
-    Print(AS_COLOR_GREEN + "[BattlePay] All BattlePay handlers registered successfully!" + AS_COLOR_RESET);
+    Print("[BattlePay] Initialized");
 }
