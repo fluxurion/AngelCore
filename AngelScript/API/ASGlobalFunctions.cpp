@@ -200,6 +200,14 @@ namespace AngelScript
                std::to_string(estimatedKB) + "KB";
     }
 
+    // ---- ANSI color constants for console output ----
+    static const std::string AS_COLOR_RESET  = "\033[0m";
+    static const std::string AS_COLOR_RED    = "\033[1;31m";
+    static const std::string AS_COLOR_GREEN  = "\033[1;32m";
+    static const std::string AS_COLOR_YELLOW = "\033[1;33m";
+    static const std::string AS_COLOR_CYAN   = "\033[1;36m";
+    static const std::string AS_COLOR_WHITE  = "\033[1;37m";
+
     void RegisterGlobalFunctions(asIScriptEngine* _scriptEngine)
     {
         int r;
@@ -233,11 +241,20 @@ namespace AngelScript
         r = _scriptEngine->RegisterGlobalFunction("void CastSpellWithBP(Unit@, Unit@, uint32, float, float)", asFUNCTION(Global_CastSpellWithBP), asCALL_CDECL);
 
         // AngelScript memory statistics
+        // AS memory stats
         r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptModuleCount()", asFUNCTION(GetASModuleCount), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("string GetAngelScriptModuleName(uint32)", asFUNCTION(GetASModuleName), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptModuleFunctionCount(uint32)", asFUNCTION(GetASModuleFunctionCount), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("uint32 GetAngelScriptGCSize()", asFUNCTION(GetASGCObjectCount), asCALL_CDECL);
         r = _scriptEngine->RegisterGlobalFunction("string GetAngelScriptStatsSummary()", asFUNCTION(GetASStatsSummary), asCALL_CDECL);
+
+        // ANSI color constants for Print()
+        r = _scriptEngine->RegisterGlobalProperty("const string AS_COLOR_RESET",  (void*)&AS_COLOR_RESET);
+        r = _scriptEngine->RegisterGlobalProperty("const string AS_COLOR_RED",    (void*)&AS_COLOR_RED);
+        r = _scriptEngine->RegisterGlobalProperty("const string AS_COLOR_GREEN",  (void*)&AS_COLOR_GREEN);
+        r = _scriptEngine->RegisterGlobalProperty("const string AS_COLOR_YELLOW", (void*)&AS_COLOR_YELLOW);
+        r = _scriptEngine->RegisterGlobalProperty("const string AS_COLOR_CYAN",   (void*)&AS_COLOR_CYAN);
+        r = _scriptEngine->RegisterGlobalProperty("const string AS_COLOR_WHITE",  (void*)&AS_COLOR_WHITE);
 
         TC_LOG_INFO("server.angelscript", "Global functions registered");
     }

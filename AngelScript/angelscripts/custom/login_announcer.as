@@ -43,51 +43,51 @@ string GetGenderString(uint8 gender)
 string GetRaceIcon(uint8 race, uint8 gender)
 {
     bool isMale = (gender == GENDER_MALE);
-    
+
     switch (race)
     {
         case RACE_HUMAN:
-            return isMale ? "|TInterface\\icons\\achievement_character_human_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_human_male:15|t"
                           : "|TInterface\\icons\\achievement_character_human_female:15|t";
         case RACE_ORC:
-            return isMale ? "|TInterface\\icons\\achievement_character_orc_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_orc_male:15|t"
                           : "|TInterface\\icons\\achievement_character_orc_female:15|t";
         case RACE_DWARF:
-            return isMale ? "|TInterface\\icons\\achievement_character_dwarf_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_dwarf_male:15|t"
                           : "|TInterface\\icons\\achievement_character_dwarf_female:15|t";
         case RACE_NIGHTELF:
-            return isMale ? "|TInterface\\icons\\achievement_character_nightelf_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_nightelf_male:15|t"
                           : "|TInterface\\icons\\achievement_character_nightelf_female:15|t";
         case RACE_UNDEAD:
-            return isMale ? "|TInterface\\icons\\achievement_character_undead_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_undead_male:15|t"
                           : "|TInterface\\icons\\achievement_character_undead_female:15|t";
         case RACE_TAUREN:
-            return isMale ? "|TInterface\\icons\\achievement_character_tauren_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_tauren_male:15|t"
                           : "|TInterface\\icons\\achievement_character_tauren_female:15|t";
         case RACE_GNOME:
-            return isMale ? "|TInterface\\icons\\achievement_character_gnome_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_gnome_male:15|t"
                           : "|TInterface\\icons\\achievement_character_gnome_female:15|t";
         case RACE_TROLL:
-            return isMale ? "|TInterface\\icons\\achievement_character_troll_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_troll_male:15|t"
                           : "|TInterface\\icons\\achievement_character_troll_female:15|t";
         case RACE_GOBLIN:
-            return isMale ? "|TInterface\\icons\\achievement_goblinhead:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_goblinhead:15|t"
                           : "|TInterface\\icons\\achievement_femalegoblinhead:15|t";
         case RACE_BLOODELF:
-            return isMale ? "|TInterface\\icons\\achievement_character_bloodelf_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_bloodelf_male:15|t"
                           : "|TInterface\\icons\\achievement_character_bloodelf_female:15|t";
         case RACE_DRAENEI:
-            return isMale ? "|TInterface\\icons\\achievement_character_draenei_male:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_draenei_male:15|t"
                           : "|TInterface\\icons\\achievement_character_draenei_female:15|t";
         case RACE_WORGEN:
             return "|TInterface\\icons\\achievement_worganhead:15|t";
         case RACE_PANDAREN_NEUTRAL:
         case RACE_PANDAREN_HORDE:
         case RACE_PANDAREN_ALLIANCE:
-            return isMale ? "|TInterface\\icons\\pandarenracial_innerpeace:15|t" 
+            return isMale ? "|TInterface\\icons\\pandarenracial_innerpeace:15|t"
                           : "|TInterface\\icons\\achievement_character_pandaren_female:15|t";
         case RACE_NIGHTBORNE:
-            return isMale ? "|TInterface\\icons\\inv_nightbornemale:15|t" 
+            return isMale ? "|TInterface\\icons\\inv_nightbornemale:15|t"
                           : "|TInterface\\icons\\inv_nightbornefemale:15|t";
         case RACE_VOID_ELF:
             return "|TInterface\\icons\\achievement_alliedrace_voidelf:15|t";
@@ -96,7 +96,7 @@ string GetRaceIcon(uint8 race, uint8 gender)
         case RACE_LIGHTFORGED_DRAENEI:
             return "|TInterface\\icons\\achievement_alliedrace_lightforgeddraenei:15|t";
         case RACE_ZANDALARI_TROLL:
-            return isMale ? "|TInterface\\icons\\inv_zandalarimalehead:15|t" 
+            return isMale ? "|TInterface\\icons\\inv_zandalarimalehead:15|t"
                           : "|TInterface\\icons\\inv_zandalarifemalehead:15|t";
         case RACE_KUL_TIRAN:
             return "|TInterface\\icons\\achievement_alliedrace_kultiranhuman:15|t";
@@ -105,7 +105,7 @@ string GetRaceIcon(uint8 race, uint8 gender)
         case RACE_VULPERA:
             return "|TInterface\\icons\\achievement_alliedrace_vulpera:15|t";
         case RACE_MAGHAR_ORC:
-            return isMale ? "|TInterface\\icons\\achievement_character_orc_male_brn:15|t" 
+            return isMale ? "|TInterface\\icons\\achievement_character_orc_male_brn:15|t"
                           : "|TInterface\\icons\\achievement_character_orc_female_brn:15|t";
         case RACE_MECHAGNOME:
             return "|TInterface\\icons\\achievement_alliedrace_mechagnome:15|t";
@@ -178,14 +178,14 @@ void OnLogin(Player@ player)
     loginmsg += "|r";
 
     // Log to console
-    Print("[LoginAnnouncer]: " + player.GetName() + " (Level " + pLevel + ") has entered the world!");
-    
+    Print(AS_COLOR_CYAN + "[LoginAnnouncer]: " + player.GetName() + " (Level " + pLevel + ") has entered the world!" + AS_COLOR_RESET);
+
     // Send to all online players via server message
     SendWorldText(loginmsg);
 }
 
 void main()
 {
-    Print("Login Announcer loaded!");
+    Print(AS_COLOR_CYAN + "Login Announcer loaded!" + AS_COLOR_RESET);
     RegisterPlayerScript(PLAYER_ON_LOGIN, @OnLogin);
 }
