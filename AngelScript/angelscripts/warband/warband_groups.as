@@ -78,7 +78,7 @@ class WarbandGroup
 void RegisterHooks()
 {
     RegisterOpcodeHandler(CMSG_SETUP_WARBAND_GROUPS, @HandleSetupWarbandGroups, true);
-    RegisterCharEnumHook(@OnCharEnum);
+    RegisterCharEnumHook(@OnWarbandGroupsCharEnum);
 }
 
 // Note: CMSG_SETUP_WARBAND_GROUPS still uses raw PacketData - this is a separate handler
@@ -273,22 +273,24 @@ void EnsureFavoritesGroup(uint32 accountId)
 
 // ===================================================================================
 
-void OnCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
+void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
 {
     if (session is null || enumResult is null)
         return;
 
     uint32 accountId = session.GetAccountId();
+    Print(AS_COLOR_CYAN + "[Warband] OnCharEnum account=" + accountId + AS_COLOR_RESET);
 
     EnsureFavoritesGroup(accountId);
 
-    // Clear any existing warband groups
     enumResult.ClearWarbandGroups();
 
     AngelDBResult groupsResult = AngelDB_Query(
         "SELECT `groupId`, `orderIndex`, `warbandSceneId`, `flags`, `name` " +
         "FROM `warband_groups` WHERE `accountId` = " + accountId + " ORDER BY `orderIndex`"
     );
+
+    Print(AS_COLOR_CYAN + "[Warband] Groups query returned " + groupsResult.GetRowCount() + " rows" + AS_COLOR_RESET);
 
     if (groupsResult.GetRowCount() == 0)
         return;

@@ -522,6 +522,8 @@ bool AngelScriptMgr::TriggerCustomHook_CharEnum(WorldSession* session, WorldPack
         _context->SetArgObject(0, session);
         _context->SetArgObject(1, &enumResult);
         r = _context->Execute();
+        if (r != asEXECUTION_FINISHED)
+            TC_LOG_ERROR("server.angelscript", "[AS] CharEnum Execute returned {} (state: {})", r, _context->GetState());
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] CharEnum EXCEPTION: {} at {}:{}",
                 _context->GetExceptionString(),
@@ -578,14 +580,10 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
             TC_LOG_ERROR("server.angelscript", "[AS] FSS-Glue — Prepare() returned {} (func={})", r, (void*)func);
             continue;
         }
-        // Set input-only parameters
+        // Only input params — no &out (avoids VM alignment crash)
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
         _context->SetArgDWord(2, static_cast<uint32>(activeBoostType));
-        // &out params: SetArgDWord for all (int&out + uint32&out + int32&out)
-        _context->SetArgDWord(3, commerceServerEnabled ? 1 : 0);
-        _context->SetArgDWord(4, commercePricePollTimeSeconds);
-        _context->SetArgDWord(5, static_cast<uint32>(contentSetID));
         r = _context->Execute();
         int stateAfterExecute = _context->GetState();
         TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue Execute returned r={}, stateAfter={}", r, stateAfterExecute);
@@ -594,12 +592,8 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
             // Script can modify bpayStoreAvailable via return value
             uint8 retByte = _context->GetReturnByte();
             bpayStoreAvailable = retByte != 0;
-            // Script can modify other values via reference parameters
-            commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(3));
-            commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(4));
-            contentSetID = *reinterpret_cast<int32*>(_context->GetAddressOfArg(5));
-            TC_LOG_DEBUG("server.angelscript", "[AS] FSS-Glue EXECUTED OK — retByte={}, bpayStoreAvailable={}, commerceServer={}, pricePoll={}, contentSet={}",
-                (int)retByte, bpayStoreAvailable, commerceServerEnabled, commercePricePollTimeSeconds, contentSetID);
+            TC_LOG_INFO("server.angelscript", "[AS] FSS-Glue EXECUTED — retByte={}, bpayStoreAvailable={}",
+                (int)retByte, bpayStoreAvailable);
         }
         else if (r == asEXECUTION_SUSPENDED)
         {
@@ -638,16 +632,11 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session
         if (r < 0) continue;
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
-        _context->SetArgDWord(2, commerceServerEnabled ? 1 : 0);
-        _context->SetArgDWord(3, commercePricePollTimeSeconds);
         r = _context->Execute();
         if (r == asEXECUTION_FINISHED)
         {
             // Script can modify bpayStoreAvailable via return value
             bpayStoreAvailable = _context->GetReturnByte() != 0;
-            // Script can modify other values via reference parameters
-            commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(2));
-            commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(3));
         }
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatus EXCEPTION: {} at {}:{}",

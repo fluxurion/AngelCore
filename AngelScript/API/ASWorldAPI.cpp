@@ -355,13 +355,13 @@ namespace AngelScript
             r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(AuthResponseHook@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
         // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(..., bool& commerceServerEnabled, ...)
         // Using int&out instead of bool&out — avoids VM alignment issues with bool references
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32, int&out, uint32&out, int32&out)");
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHookV2(uint32, bool, int32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
-            r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
+            r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHookV2@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
         // FeatureSystemStatus hook
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusHook(uint32, bool, int&out, uint32&out)");
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusHookV2(uint32, bool)");
         if (r >= 0 || r == asALREADY_REGISTERED)
-            r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusHook(FeatureSystemStatusHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatus), asCALL_CDECL);
+            r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusHook(FeatureSystemStatusHookV2@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatus), asCALL_CDECL);
 
         TC_LOG_INFO("server.angelscript", "World API registered (phase, summon, ObjectMgr, update fields, hook points)");
     }

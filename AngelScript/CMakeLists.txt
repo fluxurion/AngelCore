@@ -100,6 +100,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/angelscripts/
     PATTERN "*.as"
     PATTERN "*.txt"
     PATTERN "*.md"
+    PATTERN "*.sql"
 )
 
 # Note: GroupSources is a TrinityCore macro - disabled for standalone

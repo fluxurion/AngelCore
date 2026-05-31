@@ -27,19 +27,13 @@ uint32 OnAuthResponse(uint32 sessionID, uint32 currencyID)
 // Hook: ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN
 // Modifies BpayStoreAvailable, ActiveBoostType, CommerceServerEnabled, CommercePricePollTimeSeconds, ContentSetID
 // Called from C++: AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen()
-bool OnFeatureSystemStatusGlueScreen(uint32 sessionID, bool bpayStoreAvailable, int32 activeBoostType, int&out commerceServerEnabled, uint32&out commercePricePollTimeSeconds, int32&out contentSetID)
+bool OnFeatureSystemStatusGlueScreen(uint32 sessionID, bool bpayStoreAvailable, int32 activeBoostType)
 {
-    commerceServerEnabled = CONFIG_BPAY_COMMERCE_SERVER_ENABLED ? 1 : 0;
-    commercePricePollTimeSeconds = CONFIG_BPAY_COMMERCE_PRICE_POLL_SECONDS;
-    contentSetID = CONFIG_BPAY_CONTENT_SET_ID;
     return CONFIG_BPAY_STORE_ENABLED;
 }
 
-// Hook: ON_FEATURE_SYSTEM_STATUS (ingame)
-bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable, int&out commerceServerEnabled, uint32&out commercePricePollTimeSeconds)
+bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable)
 {
-    commerceServerEnabled = CONFIG_BPAY_COMMERCE_SERVER_ENABLED ? 1 : 0;
-    commercePricePollTimeSeconds = CONFIG_BPAY_COMMERCE_PRICE_POLL_SECONDS_INGAME;
     return CONFIG_BPAY_STORE_ENABLED;
 }
 
