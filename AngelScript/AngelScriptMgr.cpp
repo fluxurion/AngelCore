@@ -698,7 +698,7 @@ void AngelScriptMgr::TriggerConsoleCommand(std::string& command)
         command == "#reload angelscript" || command == "#rel as")
     {
         ReloadScripts();
-        printf("AngelScript scripts reloaded.\n");
+        printf("\033[1;36mAngelScript scripts reloaded.\033[0m\n");
         command.clear();
         return;
     }

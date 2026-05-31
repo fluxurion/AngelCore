@@ -223,7 +223,7 @@ namespace AngelScript
             }
 
             TC_LOG_INFO("server.angelscript",
-                "[AngelDB] Database '{}' created successfully", dbName);
+                "\033[1;32m[AngelDB] Database '{}' created successfully\033[0m", dbName);
 
             // Close the no-DB connection
             mysql_close((MYSQL*)_mysql);
@@ -267,7 +267,7 @@ namespace AngelScript
 
         _connected = true;
         TC_LOG_INFO("server.angelscript",
-            "[AngelDB] Connected to {}@{}:{}/{} (server version: {})",
+            "\033[1;32m[AngelDB] Connected to {}@{}:{}/{}\033[0m (server version: {})",
             user, host, port, dbName, mysql_get_server_info((MYSQL*)_mysql));
         return true;
     }
@@ -398,7 +398,7 @@ namespace AngelScript
         for (auto const& filePath : sqlFiles)
         {
             std::string filename = filePath.filename().string();
-            TC_LOG_INFO("server.angelscript", "[AngelDB] Executing update: {}", filename);
+            TC_LOG_INFO("server.angelscript", "\033[1;36m[AngelDB] Executing update: {}\033[0m", filename);
 
             // Read file content
             std::ifstream file(filePath);
@@ -435,7 +435,7 @@ namespace AngelScript
                     TC_LOG_ERROR("server.angelscript",
                         "[AngelDB] SQL error in {}: {}", filename, mysql_error(m));
                     TC_LOG_ERROR("server.angelscript",
-                        "[AngelDB] Update {} FAILED — left in pending/", filename);
+                        "\033[1;31m[AngelDB] Update {} FAILED\033[0m — left in pending/", filename);
                     continue;
                 }
 
@@ -466,12 +466,12 @@ namespace AngelScript
             }
             else
             {
-                TC_LOG_INFO("server.angelscript", "[AngelDB] Update {} applied successfully", filename);
+                TC_LOG_INFO("server.angelscript", "\033[1;32m[AngelDB] Update {} applied successfully\033[0m", filename);
                 executed++;
             }
         }
 
-        TC_LOG_INFO("server.angelscript", "[AngelDB] {} update(s) executed", executed);
+        TC_LOG_INFO("server.angelscript", "\033[1;36m[AngelDB] {} update(s) executed\033[0m", executed);
         return executed;
     }
 
@@ -716,7 +716,7 @@ namespace AngelScript
         }
         ASAngelDB::Instance().RunPendingUpdates(updatesDir);
 
-        TC_LOG_INFO("server.angelscript", "AngelDB API registered (auto-initialized from worldserver.conf)");
+        TC_LOG_INFO("server.angelscript", "\033[1;36mAngelDB API registered\033[0m (auto-initialized from worldserver.conf)");
     }
 
 } // namespace AngelScript
