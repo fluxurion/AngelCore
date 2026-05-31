@@ -257,7 +257,7 @@ namespace AngelScript
 
         MYSQL* conn = mysql_real_connect(
             (MYSQL*)_mysql, host.c_str(), user.c_str(), pass.c_str(),
-            dbName.c_str(), port, nullptr, 0);
+            dbName.c_str(), port, nullptr, CLIENT_MULTI_STATEMENTS);
 
         if (!conn)
         {
@@ -420,7 +420,7 @@ namespace AngelScript
                 continue;
             }
 
-            // Split by semicolon and execute each statement
+            // Execute entire file as multi-statement query (CLIENT_MULTI_STATEMENTS enabled)
             {
                 std::lock_guard<std::mutex> lock(_mutex);
                 if (!(MYSQL*)_mysql || !_connected)
@@ -429,36 +429,21 @@ namespace AngelScript
                     break;
                 }
 
-                std::istringstream stream(content);
-                std::string statement;
-                bool fileOk = true;
-
-                while (std::getline(stream, statement, ';'))
+                MYSQL* m = static_cast<MYSQL*>(_mysql);
+                if (mysql_real_query(m, content.c_str(), content.size()) != 0)
                 {
-                    // Trim whitespace
-                    size_t first = statement.find_first_not_of(" \t\r\n");
-                    if (first == std::string::npos) continue; // empty statement
-                    std::string trimmed = statement.substr(first);
-
-                    if (mysql_query((MYSQL*)_mysql, trimmed.c_str()) != 0)
-                    {
-                        TC_LOG_ERROR("server.angelscript",
-                            "[AngelDB] SQL error in {}: {} — Statement: {}",
-                            filename, mysql_error((MYSQL*)_mysql), trimmed.substr(0, 120));
-                        fileOk = false;
-                        break;
-                    }
-                    // Consume result (multi-statement needs this)
-                    MYSQL_RES* res = mysql_store_result((MYSQL*)_mysql);
-                    if (res) mysql_free_result(res);
-                }
-
-                if (!fileOk)
-                {
+                    TC_LOG_ERROR("server.angelscript",
+                        "[AngelDB] SQL error in {}: {}", filename, mysql_error(m));
                     TC_LOG_ERROR("server.angelscript",
                         "[AngelDB] Update {} FAILED — left in pending/", filename);
                     continue;
                 }
+
+                // Consume all result sets from multi-statement execution
+                do {
+                    MYSQL_RES* res = mysql_store_result(m);
+                    if (res) mysql_free_result(res);
+                } while (mysql_next_result(m) == 0);
             }
 
             // Move from pending/ to applied/
