@@ -353,13 +353,13 @@ namespace AngelScript
         r = _scriptEngine->RegisterFuncdef("uint32 AuthResponseHook(uint32, uint32)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterAuthResponseHook(AuthResponseHook@)", asFUNCTION(RegisterCustomHook_AuthResponse), asCALL_CDECL);
-        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(WorldSession@ session, bool bpayStoreAvailable, int32 activeBoostType, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds, int32& contentSetID)
-        // NOTE: After next recompile, change to WorldSession@ to allow session access in AS
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32, bool&out, uint32&out, int32&out)");
+        // FeatureSystemStatusGlueScreen hook: bool OnFeatureSystemStatusGlueScreen(..., bool& commerceServerEnabled, ...)
+        // Using int&out instead of bool&out — avoids VM alignment issues with bool references
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusGlueScreenHook(uint32, bool, int32, int&out, uint32&out, int32&out)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
-        // FeatureSystemStatus hook: bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds)
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusHook(uint32, bool, bool&out, uint32&out)");
+        // FeatureSystemStatus hook
+        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusHook(uint32, bool, int&out, uint32&out)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusHook(FeatureSystemStatusHook@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatus), asCALL_CDECL);
 

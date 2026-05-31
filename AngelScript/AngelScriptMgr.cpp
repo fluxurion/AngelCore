@@ -582,8 +582,7 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSessio
         _context->SetArgDWord(0, session ? session->GetAccountId() : 0);
         _context->SetArgByte(1, bpayStoreAvailable ? 1 : 0);
         _context->SetArgDWord(2, static_cast<uint32>(activeBoostType));
-        // &out params: must set for stack allocation, but use DWord for bools
-        // (AS 2.38.0 requires dword-aligned stack for &out regardless of type)
+        // &out params: SetArgDWord for all (int&out + uint32&out + int32&out)
         _context->SetArgDWord(3, commerceServerEnabled ? 1 : 0);
         _context->SetArgDWord(4, commercePricePollTimeSeconds);
         _context->SetArgDWord(5, static_cast<uint32>(contentSetID));
