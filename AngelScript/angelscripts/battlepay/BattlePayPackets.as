@@ -370,6 +370,29 @@ void SendProductList(WorldSession@ session, bool autoOpen)
 }
 
 // ============================================================================
+// SendGenerateSSOTokenResponse — matches retail SMSG_GENERATE_SSO_TOKEN_RESPONSE (0x4202C5)
+// Structure: uint32 Field32, uint32 Field36, uint64 TokenCreationTime, uint64 TokenExpirationTime,
+//            uint8 StringLengthByte, bytes[Length] TokenString
+// Sent after CMSG_BATTLE_PAY_OPEN_CHECKOUT to provide commerce checkout token
+// ============================================================================
+void SendGenerateSSOTokenResponse(WorldSession@ session)
+{
+    PacketData@ pd = CreatePacketData(SMSG_GENERATE_SSO_TOKEN_RESPONSE);
+
+    string token = "EU-4fab9214c0af02970faaaced7f90b398-401491545";
+    uint32 tokenLen = uint32(token.length());
+
+    pd.WriteUInt32(1);              // Field32 - result/status (1 = OK)
+    pd.WriteUInt32(0);              // Field36
+    pd.WriteUInt64(GetUnixTime());  // TokenCreationTime
+    pd.WriteUInt64(GetUnixTime() + 14400);  // TokenExpirationTime (+4 hours)
+    pd.WriteUInt8(tokenLen * 2);    // StringLengthByte = byte count (UTF-16 = chars * 2)
+    pd.WriteBytes(token, tokenLen); // TokenString as raw bytes
+
+    session.SendPacket(pd);
+}
+
+// ============================================================================
 // SendUnknownBeforeCharEnum — matches parser SMSG_UNKNOWN_BEFORE_CHAR_ENUM (0x420224)
 // Structure: PackedGuid128(Guid) + ReadDisplayCard
 // ============================================================================

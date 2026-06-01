@@ -66,10 +66,9 @@ bool HandleDistributionAssignVas(WorldSession@ session, PacketData@ packet)
 
 bool HandleOpenCheckout(WorldSession@ session, PacketData@ packet)
 {
-    // Retail NEVER responds with SMSG_BATTLE_PAY_START_CHECKOUT.
-    // Responding causes an infinite loop: client sends CMSG_BATTLE_PAY_OPEN_CHECKOUT
-    // for every product, server responds, client sends next, etc.
-    // Just absorb the request silently.
+    // Retail responds with SMSG_GENERATE_SSO_TOKEN_RESPONSE (0x4202C5) after open checkout
+    // This provides the SSO token for the commerce checkout flow
+    SendGenerateSSOTokenResponse(session);
     return true;
 }
 
