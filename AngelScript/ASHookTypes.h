@@ -266,6 +266,7 @@ namespace AngelScript
         ON_AREATRIGGER,            // Area trigger entered/exited
         ON_CHAR_ENUM,              // After char enum packet is built (BEFORE SendPacket); script can modify the packet data
         ON_POST_CHAR_ENUM,         // After SMSG_ENUM_CHARACTERS_RESULT sent; script can send follow-up packets
+        ON_POST_CHAR_DELETE,       // After SMSG_DELETE_CHAR sent; script can send follow-up packets
         ON_AUTH_RESPONSE,          // Before auth response sent; script can modify CurrencyID
         ON_FEATURE_SYSTEM_STATUS_GLUE_SCREEN, // Before glue screen features sent; script can modify BpayStoreAvailable and ActiveBoostType
         ON_FEATURE_SYSTEM_STATUS,  // Before ingame feature system status sent; script can modify BpayStoreAvailable

@@ -189,6 +189,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterFuncdef("void StringCallback(string &in)");
     _scriptEngine->RegisterFuncdef("void CharEnumCallback(WorldSession@, EnumCharactersResult@)");
     _scriptEngine->RegisterFuncdef("void PostCharEnumCallback(WorldSession@)");
+    _scriptEngine->RegisterFuncdef("void PostCharDeleteCallback(WorldSession@)");
     _scriptEngine->RegisterFuncdef("void SessionInitializedCallback(WorldSession@)");
 
     RegisterPlayerAPI(); RegisterCreatureAPI(); RegisterGameObjectAPI(); RegisterUnitAPI();
@@ -212,6 +213,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterPlayerHook(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterCharEnumHook(CharEnumCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_CHAR_ENUM, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPostCharEnumHook(PostCharEnumCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_POST_CHAR_ENUM, f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterPostCharDeleteHook(PostCharDeleteCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_POST_CHAR_DELETE, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterSessionInitializedHook(SessionInitializedCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_SESSION_INITIALIZED, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterInstanceScript(int, PlayerCallback@)",     asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterInstanceScript(static_cast<InstanceHookType>(t), f); }), asCALL_CDECL);
 
@@ -549,6 +551,26 @@ void AngelScriptMgr::TriggerCustomHook_PostCharEnum(WorldSession* session)
             TC_LOG_ERROR("server.angelscript", "[AS] PostCharEnum Execute returned {} (state: {})", r, _context->GetState());
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] PostCharEnum EXCEPTION: {} at {}:{}",
+                _context->GetExceptionString(),
+                _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
+                _context->GetExceptionLineNumber());
+    }
+}
+
+void AngelScriptMgr::TriggerCustomHook_PostCharDelete(WorldSession* session)
+{
+    auto& hooks = _customHooks[static_cast<size_t>(CustomHookType::ON_POST_CHAR_DELETE)];
+    for (auto& func : hooks)
+    {
+        if (!_context) break;
+        int r = _context->Prepare(func);
+        if (r < 0) continue;
+        _context->SetArgObject(0, session);
+        r = _context->Execute();
+        if (r != asEXECUTION_FINISHED)
+            TC_LOG_ERROR("server.angelscript", "[AS] PostCharDelete Execute returned {} (state: {})", r, _context->GetState());
+        if (r == asEXECUTION_EXCEPTION)
+            TC_LOG_ERROR("server.angelscript", "[AS] PostCharDelete EXCEPTION: {} at {}:{}",
                 _context->GetExceptionString(),
                 _context->GetExceptionFunction() ? _context->GetExceptionFunction()->GetName() : "?",
                 _context->GetExceptionLineNumber());

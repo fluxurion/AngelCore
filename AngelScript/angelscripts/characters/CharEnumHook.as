@@ -105,11 +105,57 @@ void OnPostCharEnum(WorldSession@ session)
     // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with all character GUIDs
     SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh);
     Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuidsLow.length() + " characters");
+
+    // Send SMSG_REGIONWIDE_CHARACTER_MAIL_DATA immediately after restrictions
+    SendRegionwideCharacterMailData(session, characterGuidsLow, characterGuidsHigh);
+    Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_MAIL_DATA for " + characterGuidsLow.length() + " characters");
+}
+
+void OnPostCharDelete(WorldSession@ session)
+{
+    // Only send restrictions data in realmless mode
+    if (!CONFIG_CHAR_ENUM_REALMLESS)
+    {
+        Print("[CharEnumHook] OnPostCharDelete - realmless disabled, skipping restrictions");
+        return;
+    }
+
+    Print("[CharEnumHook] OnPostCharDelete - resending restrictions after char delete");
+
+    uint32 accountId = session.GetAccountId();
+
+    array<uint64> characterGuidsLow;
+    array<uint64> characterGuidsHigh;
+
+    // Query all character GUIDs for this account (after deletion)
+    string query = "SELECT guid FROM characters WHERE account = " + accountId + " ORDER BY guid";
+    QueryResult@ result = CharacterQuery(query);
+    if (result !is null && result.GetRowCount() > 0)
+    {
+        do
+        {
+            uint64 guid = result.GetUInt64(0);
+            uint64 guidLow, guidHigh;
+            BuildPlayerGuid(guid, guidLow, guidHigh);
+            characterGuidsLow.insertLast(guidLow);
+            characterGuidsHigh.insertLast(guidHigh);
+        }
+        while (result.NextRow());
+    }
+
+    // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with updated character GUIDs
+    SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh);
+    Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuidsLow.length() + " characters after delete");
+
+    // Send SMSG_REGIONWIDE_CHARACTER_MAIL_DATA immediately after restrictions
+    SendRegionwideCharacterMailData(session, characterGuidsLow, characterGuidsHigh);
+    Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_MAIL_DATA for " + characterGuidsLow.length() + " characters after delete");
 }
 
 void main()
 {
     RegisterCharEnumHook(@OnCharEnum);
     RegisterPostCharEnumHook(@OnPostCharEnum);
-    Print("[CharEnumHook] Registered OnCharEnum + OnPostCharEnum hooks for RegionwideCharacter data");
+    RegisterPostCharDeleteHook(@OnPostCharDelete);
+    Print("[CharEnumHook] Registered OnCharEnum + OnPostCharEnum + OnPostCharDelete hooks for RegionwideCharacter data");
 }

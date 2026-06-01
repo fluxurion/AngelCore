@@ -1107,6 +1107,12 @@ void WorldSession::HandleCharDeleteOpcode(WorldPackets::Character::CharDelete& c
     Player::DeleteFromDB(charDelete.Guid, accountId);
 
     SendCharDelete(CHAR_DELETE_SUCCESS);
+
+#ifdef ANGELSCRIPT_INTEGRATION
+    // Allow AngelScript to resend regionwide restrictions after character deletion
+    if (AngelScript::AngelScriptMgr::instance()->IsEnabled())
+        AngelScript::AngelScriptMgr::instance()->TriggerCustomHook_PostCharDelete(this);
+#endif
 }
 
 void WorldSession::HandlePlayerLoginOpcode(WorldPackets::Character::PlayerLogin& playerLogin)
