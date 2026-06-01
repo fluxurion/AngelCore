@@ -221,6 +221,7 @@ namespace WorldPackets
 
             struct RegionwideCharacterListEntry
             {
+                RegionwideCharacterListEntry() = default;
                 RegionwideCharacterListEntry(Field const* fields);
 
                 CharacterInfoBasic Basic;
