@@ -507,3 +507,64 @@ void SendPurchaseList(WorldSession@ session)
 
     session.SendPacket(pd);
 }
+
+// ============================================================================
+// SendDecorRefundListResponse — SMSG_GET_DECOR_REFUND_LIST_RESPONSE (0x420375)
+// IDA Structure: uint32 count, array of {uint32, uint64, uint32, string, array}
+// Simplified: empty list response (count = 0)
+// ============================================================================
+void SendDecorRefundListResponse(WorldSession@ session)
+{
+    PacketData@ pd = CreatePacketData(SMSG_GET_DECOR_REFUND_LIST_RESPONSE);
+
+    // Empty list response
+    pd.WriteUInt32(0);  // count = 0
+
+    session.SendPacket(pd);
+}
+
+// ============================================================================
+// SendLicensedDecorQuantitiesResponse — SMSG_GET_ALL_LICENSED_DECOR_QUANTITIES_RESPONSE (0x42037A)
+// IDA Structure: uint32 count, array of {uint32, uint32, uint32}
+// Simplified: empty list response (count = 0)
+// ============================================================================
+void SendLicensedDecorQuantitiesResponse(WorldSession@ session)
+{
+    PacketData@ pd = CreatePacketData(SMSG_GET_ALL_LICENSED_DECOR_QUANTITIES_RESPONSE);
+
+    // Empty list response
+    pd.WriteUInt32(0);  // count = 0
+
+    session.SendPacket(pd);
+}
+
+// ============================================================================
+// SendCommerceTokenMarketPriceResponse — SMSG_COMMERCE_TOKEN_GET_MARKET_PRICE_RESPONSE (0x42027B)
+// IDA Structure: uint32 field32, uint32 field36, uint64 marketPrice, uint32 field48
+// ============================================================================
+void SendCommerceTokenMarketPriceResponse(WorldSession@ session)
+{
+    PacketData@ pd = CreatePacketData(SMSG_COMMERCE_TOKEN_GET_MARKET_PRICE_RESPONSE);
+
+    pd.WriteUInt32(0);   // field32
+    pd.WriteUInt32(0);   // field36
+    pd.WriteUInt64(0);   // marketPrice (in copper)
+    pd.WriteUInt32(0);   // field48
+
+    session.SendPacket(pd);
+}
+
+// ============================================================================
+// SendConsumableTokenCanVeteranBuyResponse — SMSG_CONSUMABLE_TOKEN_CAN_VETERAN_BUY_RESPONSE (0x42027F)
+// IDA Structure: uint32 field32, uint32 field36, uint64 field40
+// ============================================================================
+void SendConsumableTokenCanVeteranBuyResponse(WorldSession@ session)
+{
+    PacketData@ pd = CreatePacketData(SMSG_CONSUMABLE_TOKEN_CAN_VETERAN_BUY_RESPONSE);
+
+    pd.WriteUInt32(0);   // field32
+    pd.WriteUInt32(0);   // field36
+    pd.WriteUInt64(0);   // field40
+
+    session.SendPacket(pd);
+}
