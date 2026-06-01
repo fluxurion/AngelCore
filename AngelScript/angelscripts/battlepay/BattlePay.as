@@ -160,6 +160,9 @@ void main()
     RegisterOpcodeHandler(CMSG_COMMERCE_TOKEN_GET_MARKET_PRICE, @HandleCommerceTokenGetMarketPrice, false);
     RegisterOpcodeHandler(CMSG_CONSUMABLE_TOKEN_CAN_VETERAN_BUY, @HandleConsumableTokenCanVeteranBuy, false);
 
+    // Regionwide character data handlers
+    RegisterOpcodeHandler(CMSG_GET_REGIONWIDE_CHARACTER_RESTRICTION_AND_MAIL_DATA, @HandleGetRegionwideCharacterRestrictionAndMailData, false);
+
     // Register world hooks
     RegisterPlayerScript(PLAYER_ON_LOGIN, @OnPlayerLogin);
 

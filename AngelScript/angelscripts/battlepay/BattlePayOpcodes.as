@@ -86,6 +86,8 @@ const uint32 SMSG_SYNC_WOW_ENTITLEMENTS                              = 0x4202FC;
 const uint32 SMSG_UNKNOWN_BEFORE_CHAR_ENUM                         = 0x420224;  // 4325924 decimal - sent before/around char enum, contains Guid + DisplayCard
 const uint32 SMSG_GENERATE_SSO_TOKEN_RESPONSE                      = 0x4202C5;  // Sent after CMSG_BATTLE_PAY_OPEN_CHECKOUT - contains checkout token
 const uint32 SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA           = 0x420019;  // Contains restriction flags per character (CatchUpAvailable, IsRestricted, etc.)
+const uint32 CMSG_GET_REGIONWIDE_CHARACTER_RESTRICTION_AND_MAIL_DATA = 0x400177;  // Client requests restriction and mail data for characters
+const uint32 SMSG_REGIONWIDE_CHARACTER_MAIL_DATA                    = 0x42001A;  // Server response with mail data for characters
 
 // ============================================================================
 // BATTLEPAY PRODUCT TYPE CONSTANTS

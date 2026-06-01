@@ -598,3 +598,32 @@ void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<Object
 
     session.SendPacket(pd);
 }
+
+// ============================================================================
+// SMSG_REGIONWIDE_CHARACTER_MAIL_DATA
+// Structure: Count + [Type(byte), Guid(packed128), SenderCount, Senders[], EntryCount, Entries[Guid, Subject]]
+// Type: upper 3 bits of first byte
+// For now: sending empty mail data (0 senders, 0 entries) as stub
+// ============================================================================
+void SendRegionwideCharacterMailData(WorldSession@ session, array<ObjectGuid>@ characterGuids)
+{
+    PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_MAIL_DATA);
+
+    uint32 count = characterGuids.length();
+    pd.WriteUInt32(count);
+
+    for (uint32 i = 0; i < count; i++)
+    {
+        uint8 type = 0;  // Type in upper 3 bits (0 for now)
+        pd.WriteUInt8(type);
+        pd.WritePackedGuid128(characterGuids[i]);
+
+        // MailSenderCount = 0 (no senders)
+        pd.WriteUInt32(0);
+
+        // MailEntryCount = 0 (no mail entries)
+        pd.WriteUInt32(0);
+    }
+
+    session.SendPacket(pd);
+}
