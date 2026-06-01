@@ -72,6 +72,12 @@ const uint32 SMSG_CATALOG_SHOP_OBTAIN_LICENSE                        = 0x42036C;
 const uint32 SMSG_SYNC_WOW_ENTITLEMENTS                              = 0x4202FC;
 
 // ============================================================================
+// ADDITIONAL UNDOCUMENTED SMSG OPCODES
+// ============================================================================
+
+const uint32 SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4                = 0x4218B4;  // Unknown - sent after purchase list, contains character service data
+
+// ============================================================================
 // BATTLEPAY PRODUCT TYPE CONSTANTS
 // ============================================================================
 

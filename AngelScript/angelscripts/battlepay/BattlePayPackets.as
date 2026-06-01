@@ -370,6 +370,43 @@ void SendProductList(WorldSession@ session, bool autoOpen)
 }
 
 // ============================================================================
+// SendCharacterService4218B4 — matches parser SMSG_4218B4
+// Structure: ProductID, Field260-21856, NameLength, Flags2, Flags3, ItemLoop, Name, VisualMetadata
+// ============================================================================
+void SendCharacterService4218B4(WorldSession@ session)
+{
+    PacketData@ pd = CreatePacketData(SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4);
+
+    // Fixed uint32 fields
+    pd.WriteUInt32(0);   // ProductID
+    pd.WriteUInt32(0);   // Field260
+    pd.WriteUInt32(0);   // Field264
+    pd.WriteUInt32(0);   // Field268
+    pd.WriteUInt32(0);   // Field272
+    pd.WriteUInt32(0);   // Field276
+    pd.WriteUInt32(0);   // Field280
+    pd.WriteUInt32(0);   // Field296
+    pd.WriteUInt32(0);   // Field21840
+    pd.WriteUInt32(0);   // Field21844
+    pd.WriteUInt32(0);   // Field21848
+    pd.WriteUInt32(0);   // Field21852
+    pd.WriteUInt32(0);   // Field21856
+
+    // NameLength, Flags2, Flags3
+    pd.WriteUInt8(0);    // NameLength = 0 (no name)
+    pd.WriteUInt8(0);    // Flags2 (bit7=AlreadyOwned, bits0-5=itemCountBits)
+    pd.WriteUInt8(0);    // Flags3 (bit7=itemCount high bit, bit6=hasDisplayCard)
+
+    // No item loop since itemCount = (flags3>>7) | (2*(flags2&0x3F)) = 0
+
+    // No name string since nameLen = 0
+
+    // No VisualMetadata since Flags3 bit6 = 0
+
+    session.SendPacket(pd);
+}
+
+// ============================================================================
 // SendDistributionList — updated parser: ReadUInt32(Result), ReadByte(Byte0), ReadByte(Byte1), count = (byte1>>5)|(8*byte0)
 // ============================================================================
 void SendDistributionList(WorldSession@ session)

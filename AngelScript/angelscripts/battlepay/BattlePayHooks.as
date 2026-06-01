@@ -43,11 +43,23 @@ bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable)
 // is on the character selection screen.
 // Sends the Distribution List and Currency Update — these are required
 // for C_StoreSecure.HasDistributionList() to pass on the client.
+//
+// REFACTORED: Packet order matches retail log:
+//   1. SMSG_BATTLE_PAY_GET_PURCHASE_LIST_RESPONSE (sent via HandleGetPurchaseList on CMSG)
+//   2. SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4 (after purchase list)
+//   3. SMSG_DISPLAY_PROMOTION
+//   4. SMSG_BATTLE_PAY_GET_DISTRIBUTION_LIST_RESPONSE
+//   5. SMSG_ACCOUNT_STORE_CURRENCY_UPDATE
+//   6. SMSG_CATALOG_SHOP_OBTAIN_LICENSE
+//   7. SMSG_SYNC_WOW_ENTITLEMENTS
 // ============================================================================
 void OnSessionInitialized(WorldSession@ session)
 {
     if (session is null)
         return;
+
+    // SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4 - sent after purchase list (empty = no active services)
+    SendCharacterService4218B4(session);
 
     // SMSG_DISPLAY_PROMOTION - clear promotion popup
     SendPromotion(session);
@@ -60,7 +72,7 @@ void OnSessionInitialized(WorldSession@ session)
 
     // SMSG_CATALOG_SHOP_OBTAIN_LICENSE - sent unsolicited at char screen on retail
     PacketData@ licPd = CreatePacketData(SMSG_CATALOG_SHOP_OBTAIN_LICENSE);
-    licPd.WriteUInt32(0);  // LicenseID = 0 (no pending license)
+    licPd.WriteUInt32(1156753);  // LicenseID = 0 (no pending license)
     session.SendPacket(licPd);
 
     // SMSG_SYNC_WOW_ENTITLEMENTS - tells client about owned products. Empty = none owned.
