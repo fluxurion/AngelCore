@@ -9,11 +9,11 @@
 // Structure: Count + [Flags, Guid, RestrictionID] per character
 // Flags: bit 5-7 = TopBits, bit 4 = IsRestricted, bit 3 = CatchUpAvailable
 // ============================================================================
-void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<ObjectGuid>@ characterGuids)
+void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh)
 {
     PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA);
 
-    uint32 count = characterGuids.length();
+    uint32 count = characterGuidsLow.length();
     pd.WriteUInt32(count);
 
     for (uint32 i = 0; i < count; i++)
@@ -27,7 +27,7 @@ void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<Object
         flags = 0x08;  // CatchUpAvailable = true
 
         pd.WriteUInt8(flags);
-        pd.WritePackedGuid128(characterGuids[i]);
+        pd.WritePackedGuid(characterGuidsLow[i], characterGuidsHigh[i]);
         pd.WriteUInt32(0);  // RestrictionID = 0 (no restrictions)
     }
 
@@ -40,18 +40,18 @@ void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<Object
 // Type: upper 3 bits of first byte
 // For now: sending empty mail data (0 senders, 0 entries) as stub
 // ============================================================================
-void SendRegionwideCharacterMailData(WorldSession@ session, array<ObjectGuid>@ characterGuids)
+void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh)
 {
     PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_MAIL_DATA);
 
-    uint32 count = characterGuids.length();
+    uint32 count = characterGuidsLow.length();
     pd.WriteUInt32(count);
 
     for (uint32 i = 0; i < count; i++)
     {
         uint8 type = 0;  // Type in upper 3 bits (0 for now)
         pd.WriteUInt8(type);
-        pd.WritePackedGuid128(characterGuids[i]);
+        pd.WritePackedGuid(characterGuidsLow[i], characterGuidsHigh[i]);
 
         // MailSenderCount = 0 (no senders)
         pd.WriteUInt32(0);

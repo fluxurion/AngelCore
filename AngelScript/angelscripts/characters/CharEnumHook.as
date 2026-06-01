@@ -20,7 +20,8 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     result.ClearRegionwideCharacters();
 
     // Collect GUIDs for restrictions packet
-    array<ObjectGuid> characterGuids;
+    array<uint64> characterGuidsLow;
+    array<uint64> characterGuidsHigh;
 
     // Get all regular characters from the result
     uint32 charCount = result.GetCharacterCount();
@@ -31,8 +32,9 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
             continue;
 
         uint64 guid = charInfo.GetGuid();
-        ObjectGuid objectGuid = ObjectGuid(guid);
-        characterGuids.insertLast(objectGuid);
+        // Convert guid to low/high parts (packed guid format)
+        characterGuidsLow.insertLast(guid);
+        characterGuidsHigh.insertLast(0);  // High part is 0 for player GUIDs in most cases
 
         string name = charInfo.GetName();
         uint8 race = charInfo.GetRace();
@@ -84,8 +86,8 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     Print("[CharEnumHook] Done - RegionwideCharacterCount: " + result.GetRegionwideCharacterCount());
 
     // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with all character GUIDs
-    SendRegionwideCharacterRestrictionsData(session, characterGuids);
-    Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuids.length() + " characters");
+    SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh);
+    Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuidsLow.length() + " characters");
 }
 
 void main()
