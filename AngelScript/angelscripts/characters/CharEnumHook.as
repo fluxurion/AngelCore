@@ -17,6 +17,9 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     // Clear existing RegionwideCharacters (TC doesn't populate them)
     result.ClearRegionwideCharacters();
 
+    // Collect GUIDs for restrictions packet
+    array<ObjectGuid> characterGuids;
+
     // Get all regular characters from the result
     uint32 charCount = result.GetCharacterCount();
     for (uint32 i = 0; i < charCount; i++)
@@ -26,6 +29,9 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
             continue;
 
         uint64 guid = charInfo.GetGuid();
+        ObjectGuid objectGuid = ObjectGuid(guid);
+        characterGuids.insertLast(objectGuid);
+
         string name = charInfo.GetName();
         uint8 race = charInfo.GetRace();
         uint8 classId = charInfo.GetClass();
@@ -74,6 +80,10 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     }
 
     Print("[CharEnumHook] Done - RegionwideCharacterCount: " + result.GetRegionwideCharacterCount());
+
+    // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with all character GUIDs
+    SendRegionwideCharacterRestrictionsData(session, characterGuids);
+    Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuids.length() + " characters");
 }
 
 void main()

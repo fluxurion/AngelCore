@@ -568,3 +568,33 @@ void SendConsumableTokenCanVeteranBuyResponse(WorldSession@ session)
 
     session.SendPacket(pd);
 }
+
+// ============================================================================
+// SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA
+// Structure: Count + [Flags, Guid, RestrictionID] per character
+// Flags: bit 5-7 = TopBits, bit 4 = IsRestricted, bit 3 = CatchUpAvailable
+// ============================================================================
+void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<ObjectGuid>@ characterGuids)
+{
+    PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA);
+
+    uint32 count = characterGuids.length();
+    pd.WriteUInt32(count);
+
+    for (uint32 i = 0; i < count; i++)
+    {
+        uint8 flags = 0;
+        // Flags breakdown:
+        // bits 5-7 (0xE0) = TopBits (usually 0)
+        // bit 4 (0x10) = IsRestricted (false = 0)
+        // bit 3 (0x08) = CatchUpAvailable (true = 1, false = 0)
+        // For now, set CatchUpAvailable = true (0x08) like most entries in retail dump
+        flags = 0x08;  // CatchUpAvailable = true
+
+        pd.WriteUInt8(flags);
+        pd.WritePackedGuid128(characterGuids[i]);
+        pd.WriteUInt32(0);  // RestrictionID = 0 (no restrictions)
+    }
+
+    session.SendPacket(pd);
+}
