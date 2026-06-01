@@ -186,6 +186,7 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterFuncdef("void UnitCallback(Unit@)");
     _scriptEngine->RegisterFuncdef("void GameObjectCallback(GameObject@)");
     _scriptEngine->RegisterFuncdef("void PlayerPlayerCallback(Player@, Player@)");
+    _scriptEngine->RegisterFuncdef("void PlayerUInt32Callback(Player@, uint32)");
     _scriptEngine->RegisterFuncdef("void StringCallback(string &in)");
     _scriptEngine->RegisterFuncdef("void CharEnumCallback(WorldSession@, EnumCharactersResult@)");
     _scriptEngine->RegisterFuncdef("void PostCharEnumCallback(WorldSession@)");
@@ -211,6 +212,8 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     _scriptEngine->RegisterGlobalFunction("void RegisterSpellCalcHealingHook(uint32, SpellCalcCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_HEAL_CALC, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterAuraCalcAmountHook(uint32, AuraCalcAmountCallback@)", asFUNCTION(+[](uint32 id, asIScriptFunction* f){ ASSpellHooks::instance()->RegisterSpellHook(id, SpellHookType::ON_AURA_CALC_AMOUNT, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPlayerHook(int, PlayerCallback@)",       asFUNCTION(+[](int t, asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(static_cast<PlayerHookType>(t), f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterPlayerSceneEndHook(PlayerUInt32Callback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(PlayerHookType::ON_SCENE_END, f); }), asCALL_CDECL);
+    _scriptEngine->RegisterGlobalFunction("void RegisterPlayerSceneCancelHook(PlayerUInt32Callback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterPlayerScript(PlayerHookType::ON_SCENE_CANCEL, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterCharEnumHook(CharEnumCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_CHAR_ENUM, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPostCharEnumHook(PostCharEnumCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_POST_CHAR_ENUM, f); }), asCALL_CDECL);
     _scriptEngine->RegisterGlobalFunction("void RegisterPostCharDeleteHook(PostCharDeleteCallback@)", asFUNCTION(+[](asIScriptFunction* f){ sAngelScriptMgr->RegisterCustomHook(CustomHookType::ON_POST_CHAR_DELETE, f); }), asCALL_CDECL);
@@ -803,6 +806,8 @@ void AngelScriptMgr::TriggerPlayerMoneyChanged(Player* p, int64& a) { if(!p)retu
 void AngelScriptMgr::TriggerPlayerGiveXP(Player* p, uint32& a, Unit* v) { if(!p)return; for(auto& f:ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_GIVE_XP)){if(!_context)break;if(_context->Prepare(f)<0)continue;_context->SetArgObject(0,p);_context->SetArgDWord(1,a);if(v)_context->SetArgObject(2,v);_context->Execute();} }
 void AngelScriptMgr::TriggerPlayerReputationChange(Player* p, uint32 fid, int32& s, bool inc) { if(!p)return; for(auto& f:ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_REPUTATION_CHANGE)){if(!_context)break;if(_context->Prepare(f)<0)continue;_context->SetArgObject(0,p);_context->SetArgDWord(1,fid);_context->SetArgDWord(2,s);_context->SetArgByte(3,inc?1:0);_context->Execute();} }
 void AngelScriptMgr::TriggerPlayerUpdateZone(Player* p, uint32 z, uint32 a) { if(!p)return; EXEC_HOOKS(ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_UPDATE_ZONE), _context->SetArgObject(0,p); _context->SetArgDWord(1,z); _context->SetArgDWord(2,a)); }
+void AngelScriptMgr::TriggerPlayerSceneEnd(Player* p, uint32 sceneId) { if(!p)return; EXEC_HOOKS(ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_SCENE_END), _context->SetArgObject(0,p); _context->SetArgDWord(1,sceneId)); }
+void AngelScriptMgr::TriggerPlayerSceneCancel(Player* p, uint32 sceneId) { if(!p)return; EXEC_HOOKS(ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_SCENE_CANCEL), _context->SetArgObject(0,p); _context->SetArgDWord(1,sceneId)); }
 
 void AngelScriptMgr::TriggerCreatureHook(CreatureHookType t, Creature* c) { if(!c)return; EXEC_HOOKS(ASCreatureHooks::instance()->GetHooks(t), _context->SetArgObject(0,c)); }
 void AngelScriptMgr::TriggerCreatureKillPlayer(Creature* c, Player* p) { if(!c||!p)return; EXEC_HOOKS(ASPlayerHooks::instance()->GetHooks(PlayerHookType::ON_KILLED_BY_CREATURE), _context->SetArgObject(0,c); _context->SetArgObject(1,p)); }

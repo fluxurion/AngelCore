@@ -68,3 +68,17 @@ string CONFIG_ANGELDB_UPDATES_DIR = "AngelDB";
 // false: Sends basic character data (legacy mode)
 // Default: true (regionwide)
 bool CONFIG_CHAR_ENUM_REALMLESS = true;
+
+// ============================================================================
+// RPE / CATCHUP OPTIONS
+// ============================================================================
+
+// RPE.RequiredLogoutDays - Days of logout required for RPE/catchup eligibility
+// Calculated from characters.logout_time field
+// Default: 30 (1 month)
+uint32 CONFIG_RPE_REQUIRED_LOGOUT_DAYS = 30;
+
+// RPE.AllowFirstLogin - Allow RPE/catchup for new characters (first login)
+// New characters have logout_time = 0 or NULL
+// Default: true (available for new characters with no logout time for testing)
+bool CONFIG_RPE_ALLOW_FIRST_LOGIN = true;

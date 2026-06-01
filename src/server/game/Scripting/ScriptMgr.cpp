@@ -2361,6 +2361,11 @@ void ScriptMgr::OnSceneCancel(Player* player, uint32 sceneInstanceID, SceneTempl
 
     GET_SCRIPT(SceneScript, sceneTemplate->ScriptId, tmpscript);
     tmpscript->OnSceneCancel(player, sceneInstanceID, sceneTemplate);
+
+#ifdef ANGELSCRIPT_INTEGRATION
+    if (sAngelScriptMgr)
+        sAngelScriptMgr->TriggerPlayerSceneCancel(player, sceneTemplate->SceneId);
+#endif
 }
 
 void ScriptMgr::OnSceneComplete(Player* player, uint32 sceneInstanceID, SceneTemplate const* sceneTemplate)
@@ -2370,6 +2375,11 @@ void ScriptMgr::OnSceneComplete(Player* player, uint32 sceneInstanceID, SceneTem
 
     GET_SCRIPT(SceneScript, sceneTemplate->ScriptId, tmpscript);
     tmpscript->OnSceneComplete(player, sceneInstanceID, sceneTemplate);
+
+#ifdef ANGELSCRIPT_INTEGRATION
+    if (sAngelScriptMgr)
+        sAngelScriptMgr->TriggerPlayerSceneEnd(player, sceneTemplate->SceneId);
+#endif
 }
 
 // Quest

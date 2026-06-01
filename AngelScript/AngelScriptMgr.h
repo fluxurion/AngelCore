@@ -156,6 +156,8 @@ namespace AngelScript
         void TriggerPlayerGiveXP(Player* player, uint32& amount, Unit* victim);
         void TriggerPlayerReputationChange(Player* player, uint32 factionId, int32& standing, bool incremental);
         void TriggerPlayerUpdateZone(Player* player, uint32 newZone, uint32 newArea);
+        void TriggerPlayerSceneEnd(Player* player, uint32 sceneId);
+        void TriggerPlayerSceneCancel(Player* player, uint32 sceneId);
         void TriggerCreatureHook(CreatureHookType type, Creature* creature);
         void TriggerCreatureKillPlayer(Creature* creature, Player* player);
         void TriggerGameObjectHook(GameObjectHookType type, GameObject* go);

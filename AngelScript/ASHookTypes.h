@@ -32,6 +32,8 @@ namespace AngelScript
         ON_GIVE_XP,         // XP given
         ON_REPUTATION_CHANGE, // Reputation changes
         ON_UPDATE_ZONE,     // Zone updates
+        ON_SCENE_END,       // Scene ends
+        ON_SCENE_CANCEL,    // Scene cancelled
         COUNT
     };
 
