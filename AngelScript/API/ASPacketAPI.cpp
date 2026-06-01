@@ -154,7 +154,7 @@ namespace AngelScript
     {
         ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
         outLow = guid.GetCounter();
-        outHigh = guid.GetHigh();
+        outHigh = guid._data[1];  // Raw high 64-bit value
     }
 
     static void PD_WriteUInt8(PacketData* pd, uint8 v) { if (pd) pd->WriteUInt8(v); }
