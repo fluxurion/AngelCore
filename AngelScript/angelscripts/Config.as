@@ -58,3 +58,13 @@ string CONFIG_ANGELDB_DATABASE = "angelcore_db";
 // Executed files are moved to <UpdatesDir>/applied/.
 // Default: "AngelDB" (resolves to angelscripts/AngelDB/)
 string CONFIG_ANGELDB_UPDATES_DIR = "AngelDB";
+
+// ============================================================================
+// CHARACTER ENUMERATION OPTIONS
+// ============================================================================
+
+// CharEnum.Realmless - Enable regionwide (realmless) character enumeration
+// true: Sends regionwide character data with money/restrictions/mail support
+// false: Sends basic character data (legacy mode)
+// Default: true (regionwide)
+bool CONFIG_CHAR_ENUM_REALMLESS = true;

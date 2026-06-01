@@ -8,6 +8,7 @@
  * OnPostCharEnum (POST-send): Sends SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA
  *                             after SMSG_ENUM_CHARACTERS_RESULT.
  */
+#include "../Config.as"
 #include "RegionwideCharacterOpcodes.as"
 #include "RegionwideCharacterPackets.as"
 
@@ -20,10 +21,17 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     }
 
     uint32 charCount = result.GetCharacterCount();
-    Print("[CharEnumHook] Called - CharacterCount: " + charCount);
+    Print("[CharEnumHook] Called - CharacterCount: " + charCount + ", Realmless: " + CONFIG_CHAR_ENUM_REALMLESS);
 
     if (charCount == 0)
         return;
+
+    // If realmless is disabled, use basic character data (legacy mode)
+    if (!CONFIG_CHAR_ENUM_REALMLESS)
+    {
+        Print("[CharEnumHook] Realmless disabled - using basic character data");
+        return;
+    }
 
     // Move TC's full CharacterInfoBasic data into RegionwideCharacters
     // (copies VisualItems, Customizations, Flags, Guild, MapID, etc.)
@@ -61,6 +69,13 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
 
 void OnPostCharEnum(WorldSession@ session)
 {
+    // Only send restrictions data in realmless mode
+    if (!CONFIG_CHAR_ENUM_REALMLESS)
+    {
+        Print("[CharEnumHook] OnPostCharEnum - realmless disabled, skipping restrictions");
+        return;
+    }
+
     Print("[CharEnumHook] OnPostCharEnum - sending restrictions after char enum");
 
     uint32 accountId = session.GetAccountId();
