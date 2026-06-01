@@ -58,16 +58,9 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
             money = moneyResult.GetUInt64(0);
         }
 
-        // Query average item level from database
+        // TODO: Query average item level from world.item_template via C++ API
+        // item_instance table doesn't have itemLevel column directly
         float avgIlvl = 0.0f;
-        QueryResult@ ilvlResult = CharacterQuery(
-            "SELECT AVG(ii.itemLevel) FROM character_inventory ci " +
-            "JOIN item_instance ii ON ci.item = ii.guid " +
-            "WHERE ci.guid = " + guid + " AND ci.bag = 0 AND ci.slot < 19");
-        if (ilvlResult !is null && ilvlResult.NextRow())
-        {
-            avgIlvl = ilvlResult.GetFloat(0);
-        }
 
         // Add new RegionwideCharacter with all data
         RegionwideCharacterInfo@ regionChar = result.AddRegionwideCharacter(
