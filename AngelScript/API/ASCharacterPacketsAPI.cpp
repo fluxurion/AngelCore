@@ -364,6 +364,18 @@ namespace AngelScript
         }
     }
 
+    static void EnumResult_SetRealmless(WorldPackets::Character::EnumCharactersResult* result, bool realmless)
+    {
+        if (!result) return;
+        result->Realmless = realmless;
+    }
+
+    static bool EnumResult_GetRealmless(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return false;
+        return result->Realmless;
+    }
+
     void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result)
     {
         ClearWarbandGroupNameStorage(result);
@@ -392,6 +404,8 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ FindCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindCharacterByGuid), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearCharacters()", asFUNCTION(EnumResult_ClearCharacters), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void CopyCharactersToRegionwide()", asFUNCTION(EnumResult_CopyCharactersToRegionwide), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void SetRealmless(bool realmless)", asFUNCTION(EnumResult_SetRealmless), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "bool GetRealmless()", asFUNCTION(EnumResult_GetRealmless), asCALL_CDECL_OBJFIRST);
 
         // Warband group methods
         engine->RegisterObjectMethod("EnumCharactersResult", "bool IsDeletedCharacters()", asFUNCTION(EnumResult_IsDeletedCharacters), asCALL_CDECL_OBJFIRST);

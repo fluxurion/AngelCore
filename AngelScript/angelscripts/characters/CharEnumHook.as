@@ -23,6 +23,9 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     uint32 charCount = result.GetCharacterCount();
     Print("[CharEnumHook] Called - CharacterCount: " + charCount + ", Realmless: " + CONFIG_CHAR_ENUM_REALMLESS);
 
+    // Set the Realmless flag in the packet based on config
+    result.SetRealmless(CONFIG_CHAR_ENUM_REALMLESS);
+
     if (charCount == 0)
         return;
 
