@@ -3,6 +3,8 @@
  * AngelScript hook for SMSG_ENUM_CHARACTERS_RESULT
  * Populates RegionwideCharacterInfo data from database
  */
+#include "RegionwideCharacterOpcodes.as"
+#include "RegionwideCharacterPackets.as"
 
 void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
 {

@@ -1,0 +1,43 @@
+/*
+ * RegionwideCharacterHandlers.as
+ * Handlers for regionwide character data (restrictions, mail, etc.)
+ * These are CHARACTER handlers, not BattlePay handlers
+ */
+#include "RegionwideCharacterOpcodes.as"
+#include "RegionwideCharacterPackets.as"
+
+// ============================================================================
+// CMSG_GET_REGIONWIDE_CHARACTER_RESTRICTION_AND_MAIL_DATA (0x400177)
+// Structure: Count + [Guid1(packed128), Guid2(packed128)] per entry
+// Response: SMSG_REGIONWIDE_CHARACTER_MAIL_DATA (0x42001A)
+// ============================================================================
+bool HandleGetRegionwideCharacterRestrictionAndMailData(WorldSession@ session, PacketData@ packet)
+{
+    // Read the count of characters client is requesting data for
+    uint32 count = packet.ReadUInt32();
+
+    // Collect all GUIDs from the request
+    array<ObjectGuid> characterGuids;
+    for (uint32 i = 0; i < count; i++)
+    {
+        ObjectGuid guid1 = packet.ReadPackedGuid128();
+        ObjectGuid guid2 = packet.ReadPackedGuid128();
+        // Use guid1 as the character GUID
+        characterGuids.insertLast(guid1);
+    }
+
+    Print("[RegionwideCharacter] CMSG_GET_REGIONWIDE_CHARACTER_RESTRICTION_AND_MAIL_DATA for " + count + " characters");
+
+    // Send SMSG_REGIONWIDE_CHARACTER_MAIL_DATA response
+    // Note: Restrictions are sent via SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA
+    SendRegionwideCharacterMailData(session, characterGuids);
+    return true;
+}
+
+void main()
+{
+    // Register regionwide character data handlers
+    RegisterOpcodeHandler(CMSG_GET_REGIONWIDE_CHARACTER_RESTRICTION_AND_MAIL_DATA, @HandleGetRegionwideCharacterRestrictionAndMailData, false);
+
+    Print("[RegionwideCharacter] Initialized handlers");
+}
