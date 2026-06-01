@@ -117,9 +117,6 @@ void OnPlayerLogin(Player@ player)
         }
     }
 
-    // Check for pending catch-up requests
-    ProcessPendingCatchUp(player);
-
     // Check for pending character services
     CheckPendingServices(player);
 }

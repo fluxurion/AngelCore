@@ -9,7 +9,6 @@
 #include "BattlePayData.as"
 #include "BattlePayStubs.as"
 #include "BattlePayDelivery.as"
-#include "../characters/CharacterCatchUp.as"
 #include "../characters/CharacterUpgrade.as"
 #include "CharacterServices.as"
 
@@ -66,10 +65,6 @@ bool DeliverProduct(Player@ player, const ProductDataEntry& productData, uint32 
         {
             delivered = ProcessCharacterUpgradeFromBattlePay(player, productData.BoostType);
         }
-        else if (type == PRODUCT_GEAR_CATCHUP)
-        {
-            delivered = ProcessGearCatchUpFromBattlePay(player, uint32(0));
-        }
         else if (type == PRODUCT_TRANSMOG)
         {
             delivered = DeliverTransmogAppearance(player, productData.TransmogSetID);
@@ -119,10 +114,6 @@ bool DeliverProduct(Player@ player, const ProductDataEntry& productData, uint32 
         else if (type == PRODUCT_LEVEL_BOOST)
         {
             delivered = ProcessCharacterUpgradeFromBattlePay(targetGuid, productData.BoostType, accountID);
-        }
-        else if (type == PRODUCT_GEAR_CATCHUP)
-        {
-            delivered = ProcessGearCatchUpFromBattlePay(targetGuid, uint32(0), accountID);
         }
         else if (type == PRODUCT_NAME_CHANGE || type == PRODUCT_FACTION_CHANGE ||
                  type == PRODUCT_RACE_CHANGE || type == PRODUCT_CHAR_TRANSFER ||

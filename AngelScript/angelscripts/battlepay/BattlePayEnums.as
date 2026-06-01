@@ -39,12 +39,10 @@ enum ProductType
     PRODUCT_TRANSMOG    = 26,
     PRODUCT_GOLD        = 30,
     PRODUCT_CURRENCY    = 31,
-    PRODUCT_GEAR_CATCHUP = 32,  // CatchUpRequiredDays: Days of logout required for gear catch-up eligibility (0 = always available)
     PRODUCT_CUSTOM_ITEM_SET = 100,
     PRODUCT_CUSTOM_BUFF = 101,
     PRODUCT_CUSTOM_HEIRLOOM = 102,
     PRODUCT_CUSTOM_LOADOUT = 103,
-    // Note: 104 was PRODUCT_CUSTOM_GEAR_UPDATE, now use PRODUCT_GEAR_CATCHUP (32)
     PRODUCT_CUSTOM_ACHIEVEMENT = 105,
     PRODUCT_CUSTOM_MULTI_QUEST = 106
 }

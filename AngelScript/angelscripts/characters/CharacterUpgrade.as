@@ -5,7 +5,6 @@
 
 #include "../battlepay/BattlePayOpcodes.as"
 #include "../battlepay/BattlePayStubs.as"
-#include "CharacterCatchUp.as"
 
 // ============================================================================
 // CHARACTER UPGRADE - Player Online
@@ -77,23 +76,16 @@ bool DeliverCharacterUpgradePackage(Player@ player, uint32 boostType)
         Print(AS_COLOR_RED + "[BattlePay] Character upgrade - level boost failed or already max level" + AS_COLOR_RESET);
     }
 
-    // Step 2: Gear catch-up for the new level
-    bool geared = DeliverCatchUp(player, uint32(0)); // 0 = use current level
-    if (!geared)
-    {
-        Print(AS_COLOR_RED + "[BattlePay] Character upgrade - catch-up failed" + AS_COLOR_RESET);
-    }
-
-    // Step 3: Mount (if appropriate for level)
+    // Step 2: Mount (if appropriate for level)
     if (player.GetLevel() >= 20)
     {
         // Could add basic riding skill here
         Print(AS_COLOR_CYAN + "[BattlePay] Character upgrade - riding skill available" + AS_COLOR_RESET);
     }
 
-    player.SendNotification("Character upgrade complete! Check your mail for gear.");
+    player.SendNotification("Character upgrade complete!");
     Print(AS_COLOR_GREEN + "[BattlePay] Character upgrade package delivered to " + player.GetName() + AS_COLOR_RESET);
-    return leveled || geared;
+    return leveled;
 }
 
 // ============================================================================
@@ -126,9 +118,6 @@ bool ProcessCharacterUpgradeFromBattlePay(uint32 characterGuid, uint32 boostType
 
     // Also queue level boost directly
     DeliverLevelBoost(characterGuid, boostType);
-
-    // Queue catch-up
-    DeliverCatchUp(characterGuid, uint32(0));
 
     Print(AS_COLOR_CYAN + "[BattlePay] Character upgrade queued for offline character " + characterGuid + AS_COLOR_RESET);
     return true;

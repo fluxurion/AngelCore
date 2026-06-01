@@ -127,37 +127,6 @@ bool HandleBattlePayCommand(Player@ player, string cmd, array<string>@ args)
             player.SendNotification("Products: " + g_productDatas.length() + ", Disabled: " + g_disabledProducts.length());
             return true;
         }
-        else if (subcmd == "gear" || subcmd == "catchup")
-        {
-            Player@ target = player;
-            uint32 targetLevel = player.GetLevel();
-
-            if (args.length() >= 2)
-                targetLevel = uint32(parseInt(args[1]));
-
-            if (args.length() >= 3)
-            {
-                @target = GetPlayerByName(args[2]);
-                if (target is null)
-                {
-                    player.SendNotification("Player not found: " + args[2]);
-                    return true;
-                }
-            }
-
-            bool delivered = DeliverCatchUp(target, targetLevel);
-            if (delivered)
-            {
-                player.SendNotification("Catch-up requested for " + target.GetName() + " to level " + targetLevel);
-                if (!(target is player))
-                    target.SendNotification("A gear update has been prepared for you!");
-            }
-            else
-            {
-                player.SendNotification("Failed to request gear update");
-            }
-            return true;
-        }
         else if (subcmd == "upgrade")
         {
             Player@ target = player;

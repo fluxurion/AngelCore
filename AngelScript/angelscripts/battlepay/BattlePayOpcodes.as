@@ -97,7 +97,7 @@ const uint32 PRODUCT_TOY             = 4;
 const uint32 PRODUCT_TRANSMOG        = 5;
 const uint32 PRODUCT_LEVEL_BOOST     = 6;
 const uint32 PRODUCT_GOLD            = 15;
-const uint32 PRODUCT_GEAR_CATCHUP      = 7;
+// PRODUCT_GEAR_CATCHUP removed - was a misunderstanding
 const uint32 PRODUCT_NAME_CHANGE       = 8;
 const uint32 PRODUCT_FACTION_CHANGE  = 9;
 const uint32 PRODUCT_RACE_CHANGE       = 10;
