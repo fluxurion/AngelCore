@@ -51,11 +51,25 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
 
         // Query money from database
         uint64 money = 0;
-        QueryResult@ moneyResult = CharacterQuery(
-            "SELECT money FROM characters WHERE guid = " + guid);
-        if (moneyResult !is null && moneyResult.NextRow())
+        string moneyQuery = "SELECT money FROM characters WHERE guid = " + guid;
+        Print("[CharEnumHook] Money query: " + moneyQuery);
+        QueryResult@ moneyResult = CharacterQuery(moneyQuery);
+        if (moneyResult !is null)
         {
-            money = moneyResult.GetUInt64(0);
+            Print("[CharEnumHook] Money query returned result");
+            if (moneyResult.NextRow())
+            {
+                money = moneyResult.GetUInt64(0);
+                Print("[CharEnumHook] Money from DB: " + money);
+            }
+            else
+            {
+                Print("[CharEnumHook] Money query has no rows");
+            }
+        }
+        else
+        {
+            Print("[CharEnumHook] Money query returned null");
         }
 
         // TODO: Query average item level from world.item_template via C++ API
