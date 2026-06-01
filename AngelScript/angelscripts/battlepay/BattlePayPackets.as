@@ -387,7 +387,7 @@ void SendGenerateSSOTokenResponse(WorldSession@ session)
     pd.WriteUInt64(GetUnixTime());  // TokenCreationTime
     pd.WriteUInt64(GetUnixTime() + 14400);  // TokenExpirationTime (+4 hours)
     pd.WriteUInt8(tokenLen * 2);    // StringLengthByte = byte count (UTF-16 = chars * 2)
-    pd.WriteBytes(token, tokenLen); // TokenString as raw bytes
+    pd.WriteWoWString(token, tokenLen); // TokenString as raw bytes
 
     session.SendPacket(pd);
 }
