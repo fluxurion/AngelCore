@@ -2,8 +2,9 @@
  * CharEnumHook.as
  * AngelScript hooks for SMSG_ENUM_CHARACTERS_RESULT
  *
- * OnCharEnum (PRE-send):  Populates RegionwideCharacterInfo from TC's
- *                          Character entries (money, ilvl, etc.).
+ * OnCharEnum (PRE-send):  Copies all CharacterInfoBasic data from TC's
+ *                          Characters into RegionwideCharacters, clears
+ *                          the Characters list, then enriches with money.
  * OnPostCharEnum (POST-send): Sends SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA
  *                             after SMSG_ENUM_CHARACTERS_RESULT.
  */
@@ -21,35 +22,25 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     uint32 charCount = result.GetCharacterCount();
     Print("[CharEnumHook] Called - CharacterCount: " + charCount);
 
-    // Collect character data from TC's Characters list
-    array<string>  names;
-    array<uint64>  guids;
-    array<uint8>   races;
-    array<uint8>   classes;
-    array<uint8>   genders;
-    array<uint8>   levels;
+    if (charCount == 0)
+        return;
 
-    for (uint32 i = 0; i < charCount; i++)
+    // Move TC's full CharacterInfoBasic data into RegionwideCharacters
+    // (copies VisualItems, Customizations, Flags, Guild, MapID, etc.)
+    result.CopyCharactersToRegionwide();
+
+    // Clear the basic Characters list — we send RegionwideCharacters instead
+    result.ClearCharacters();
+
+    // Enrich RegionwideCharacters with money from the database
+    uint32 regionCount = result.GetRegionwideCharacterCount();
+    for (uint32 i = 0; i < regionCount; i++)
     {
-        CharEnumCharacterInfo@ charInfo = result.GetCharacter(i);
-        if (charInfo is null)
+        RegionwideCharacterInfo@ regionChar = result.GetRegionwideCharacter(i);
+        if (regionChar is null)
             continue;
 
-        guids.insertLast(charInfo.GetGuid());
-        names.insertLast(charInfo.GetName());
-        races.insertLast(charInfo.GetRace());
-        classes.insertLast(charInfo.GetClass());
-        genders.insertLast(charInfo.GetGender());
-        levels.insertLast(charInfo.GetLevel());
-    }
-
-    // Clear existing RegionwideCharacters (TC doesn't populate them)
-    result.ClearRegionwideCharacters();
-
-    // Populate RegionwideCharacters from the collected data
-    for (uint32 i = 0; i < guids.length(); i++)
-    {
-        uint64 guid = guids[i];
+        uint64 guid = regionChar.GetGuid();
 
         // Query money from database
         uint64 money = 0;
@@ -59,25 +50,13 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
         {
             money = moneyResult.GetUInt64(0);
         }
+        regionChar.SetMoney(money);
 
-        // TODO: Query average item level from world.item_template via C++ API
-        float avgIlvl = 0.0f;
-
-        // Add new RegionwideCharacter with all data
-        RegionwideCharacterInfo@ regionChar = result.AddRegionwideCharacter(
-            guid, names[i], races[i], classes[i], genders[i], levels[i], money, avgIlvl);
-
-        if (regionChar !is null)
-        {
-            Print("[CharEnumHook] Added RegionwideChar: " + names[i] + " Money: " + money + " ILvl: " + avgIlvl);
-        }
-        else
-        {
-            Print("[CharEnumHook] ERROR: Failed to add RegionwideChar: " + names[i]);
-        }
+        // TODO: Query average item level
+        // regionChar.SetAvgItemLevel(avgIlvlFromDB);
     }
 
-    Print("[CharEnumHook] Done - RegionwideCharacterCount: " + result.GetRegionwideCharacterCount());
+    Print("[CharEnumHook] Done - RegionwideCharacterCount: " + regionCount);
 }
 
 void OnPostCharEnum(WorldSession@ session)

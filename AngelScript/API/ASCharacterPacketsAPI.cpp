@@ -338,6 +338,32 @@ namespace AngelScript
         return &entry;
     }
 
+    static void EnumResult_CopyCharactersToRegionwide(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return;
+
+        result->RegionwideCharacters.clear();
+        result->RegionwideCharacters.reserve(result->Characters.size());
+
+        for (auto& charInfo : result->Characters)
+        {
+            result->RegionwideCharacters.emplace_back();
+            auto& entry = result->RegionwideCharacters.back();
+
+            // Copy the FULL CharacterInfoBasic (includes VisualItems, Customizations,
+            // Flags, Guild info, MapID, ZoneID, PreloadPos, timestamps, etc.)
+            entry.Basic = charInfo.Basic;
+
+            // Initialize regionwide-specific fields (will be updated by AngelScript)
+            entry.Money = 0;
+            entry.AvgEquippedItemLevel = 0.0f;
+            entry.CurrentSeasonMythicPlusOverallScore = 0.0f;
+            entry.CurrentSeasonBestPvpRating = 0;
+            entry.PvpRatingBracket = -1;
+            entry.PvpRatingAssociatedSpecID = 0;
+        }
+    }
+
     void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result)
     {
         ClearWarbandGroupNameStorage(result);
@@ -365,6 +391,7 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ GetCharacter(uint32 index)", asFUNCTION(EnumResult_GetCharacter), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ FindCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindCharacterByGuid), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearCharacters()", asFUNCTION(EnumResult_ClearCharacters), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void CopyCharactersToRegionwide()", asFUNCTION(EnumResult_CopyCharactersToRegionwide), asCALL_CDECL_OBJFIRST);
 
         // Warband group methods
         engine->RegisterObjectMethod("EnumCharactersResult", "bool IsDeletedCharacters()", asFUNCTION(EnumResult_IsDeletedCharacters), asCALL_CDECL_OBJFIRST);

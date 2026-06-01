@@ -37,9 +37,9 @@ void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64
 
 // ============================================================================
 // SMSG_REGIONWIDE_CHARACTER_MAIL_DATA (0x42001A)
-// Structure: Count + [Type(byte), Guid(packed128), SenderCount, Senders[], EntryCount, Entries[Guid, Subject]]
+// Structure: Count + [Type(byte), Guid(packed128), SenderCount, Senders[],
+//                      EntryCount, Entries[Guid, Subject]]
 // Type: upper 3 bits of first byte
-// For now: sending empty mail data (0 senders, 0 entries) as stub
 // ============================================================================
 void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh)
 {
