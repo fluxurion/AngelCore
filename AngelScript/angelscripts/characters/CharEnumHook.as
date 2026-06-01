@@ -7,7 +7,12 @@
 void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
 {
     if (result is null)
+    {
+        Print("[CharEnumHook] ERROR: result is null!");
         return;
+    }
+
+    Print("[CharEnumHook] Called - CharacterCount: " + result.GetCharacterCount());
 
     // Clear existing RegionwideCharacters (TC doesn't populate them)
     result.ClearRegionwideCharacters();
@@ -51,6 +56,15 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
         RegionwideCharacterInfo@ regionChar = result.AddRegionwideCharacter(
             guid, name, race, classId, gender, level, money, avgIlvl);
 
+        if (regionChar !is null)
+        {
+            Print("[CharEnumHook] Added RegionwideChar: " + name + " Money: " + money + " ILvl: " + avgIlvl);
+        }
+        else
+        {
+            Print("[CharEnumHook] ERROR: Failed to add RegionwideChar: " + name);
+        }
+
         // TODO: Mythic+ Score and PvP Rating when custom tables are ready
         // if (regionChar !is null)
         // {
@@ -58,6 +72,8 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
         //     regionChar.SetPvpRating(...);
         // }
     }
+
+    Print("[CharEnumHook] Done - RegionwideCharacterCount: " + result.GetRegionwideCharacterCount());
 }
 
 void main()
