@@ -152,6 +152,14 @@ void main()
     RegisterOpcodeHandler(CMSG_GET_LAST_CATALOG_FETCH, @HandleGetLastCatalogFetch, false);
     RegisterOpcodeHandler(CMSG_UPDATE_LAST_CATALOG_FETCH, @HandleUpdateLastCatalogFetch, false);
 
+    // Decor/collection system handlers (stubs for now)
+    RegisterOpcodeHandler(CMSG_GET_DECOR_REFUND_LIST, @HandleGetDecorRefundList, false);
+    RegisterOpcodeHandler(CMSG_GET_ALL_LICENSED_DECOR_QUANTITIES, @HandleGetAllLicensedDecorQuantities, false);
+
+    // Commerce token handlers
+    RegisterOpcodeHandler(CMSG_COMMERCE_TOKEN_GET_MARKET_PRICE, @HandleCommerceTokenGetMarketPrice, false);
+    RegisterOpcodeHandler(CMSG_CONSUMABLE_TOKEN_CAN_VETERAN_BUY, @HandleConsumableTokenCanVeteranBuy, false);
+
     // Register world hooks
     RegisterPlayerScript(PLAYER_ON_LOGIN, @OnPlayerLogin);
 

@@ -147,6 +147,40 @@ bool HandleUpdateLastCatalogFetch(WorldSession@ session, PacketData@ packet)
     return true;
 }
 
+bool HandleGetDecorRefundList(WorldSession@ session, PacketData@ packet)
+{
+    // Send SMSG_GET_DECOR_REFUND_LIST_RESPONSE (0x420375)
+    // Structure: uint32 count, array entries
+    // Empty list for now
+    SendDecorRefundListResponse(session);
+    return true;
+}
+
+bool HandleGetAllLicensedDecorQuantities(WorldSession@ session, PacketData@ packet)
+{
+    // Send SMSG_GET_ALL_LICENSED_DECOR_QUANTITIES_RESPONSE (0x42037A)
+    // Structure: uint32 count, array of {uint32, uint32, uint32}
+    // Empty list for now
+    SendLicensedDecorQuantitiesResponse(session);
+    return true;
+}
+
+bool HandleCommerceTokenGetMarketPrice(WorldSession@ session, PacketData@ packet)
+{
+    // Send SMSG_COMMERCE_TOKEN_GET_MARKET_PRICE_RESPONSE (0x42027B)
+    // Structure: uint32 field32, uint32 field36, uint64 marketPrice, uint32 field48
+    SendCommerceTokenMarketPriceResponse(session);
+    return true;
+}
+
+bool HandleConsumableTokenCanVeteranBuy(WorldSession@ session, PacketData@ packet)
+{
+    // Send SMSG_CONSUMABLE_TOKEN_CAN_VETERAN_BUY_RESPONSE (0x42027F)
+    // Structure: uint32 field32, uint32 field36, uint64 field40
+    SendConsumableTokenCanVeteranBuyResponse(session);
+    return true;
+}
+
 // ============================================================================
 // DELIVERY STUBS - offline / SQL-based
 // Note: DeliverViaMail/DeliverGoldViaMail are in BattlePayDelivery.as
