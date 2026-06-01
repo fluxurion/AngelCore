@@ -147,6 +147,7 @@ namespace WorldPackets
                  *
                  * @param   fields         Field set of CharacterDatabaseStatements::CHAR_SEL_ENUM
                  */
+                CharacterInfoBasic() = default;
                 CharacterInfoBasic(Field const* fields);
 
                 ObjectGuid Guid;
