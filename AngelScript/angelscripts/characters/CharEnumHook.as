@@ -36,11 +36,18 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
         characterGuidsLow.insertLast(guid);
         characterGuidsHigh.insertLast(0);  // High part is 0 for player GUIDs in most cases
 
+        // Get character data with explicit initialization
         string name = charInfo.GetName();
-        uint8 race = charInfo.GetRace();
-        uint8 classId = charInfo.GetClass();
-        uint8 gender = charInfo.GetGender();
-        uint8 level = charInfo.GetLevel();
+        uint8 race = 0;
+        uint8 classId = 0;
+        uint8 gender = 0;
+        uint8 level = 0;
+
+        // Safely get character attributes
+        race = charInfo.GetRace();
+        classId = charInfo.GetClass();
+        gender = charInfo.GetGender();
+        level = charInfo.GetLevel();
 
         // Query money from database
         uint64 money = 0;

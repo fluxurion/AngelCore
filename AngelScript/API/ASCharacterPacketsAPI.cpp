@@ -81,6 +81,30 @@ namespace AngelScript
         return static_cast<uint32>(info->RestrictionsAndMails.MailSenders.size());
     }
 
+    static uint8_t CharInfo_GetRace(WorldPackets::Character::EnumCharactersResult::CharacterInfo* info)
+    {
+        if (!info) return 0;
+        return info->Basic.RaceID;
+    }
+
+    static uint8_t CharInfo_GetClass(WorldPackets::Character::EnumCharactersResult::CharacterInfo* info)
+    {
+        if (!info) return 0;
+        return info->Basic.ClassID;
+    }
+
+    static uint8_t CharInfo_GetGender(WorldPackets::Character::EnumCharactersResult::CharacterInfo* info)
+    {
+        if (!info) return 0;
+        return info->Basic.SexID;
+    }
+
+    static uint8_t CharInfo_GetLevel(WorldPackets::Character::EnumCharactersResult::CharacterInfo* info)
+    {
+        if (!info) return 0;
+        return info->Basic.ExperienceLevel;
+    }
+
     // ---- RegionwideCharacterInfo helpers ----
     static uint64_t RegionwideInfo_GetGuid(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
     {
@@ -317,6 +341,10 @@ namespace AngelScript
         engine->RegisterObjectType("CharEnumCharacterInfo", 0, asOBJ_REF | asOBJ_NOCOUNT);
         engine->RegisterObjectMethod("CharEnumCharacterInfo", "uint64 GetGuid()", asFUNCTION(CharInfo_GetGuid), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("CharEnumCharacterInfo", "string GetName()", asFUNCTION(CharInfo_GetName), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("CharEnumCharacterInfo", "uint8 GetRace()", asFUNCTION(CharInfo_GetRace), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("CharEnumCharacterInfo", "uint8 GetClass()", asFUNCTION(CharInfo_GetClass), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("CharEnumCharacterInfo", "uint8 GetGender()", asFUNCTION(CharInfo_GetGender), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("CharEnumCharacterInfo", "uint8 GetLevel()", asFUNCTION(CharInfo_GetLevel), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("CharEnumCharacterInfo", "void AddMailSender(const string& in senderName, uint32 senderType)", asFUNCTION(CharInfo_AddMailSender), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("CharEnumCharacterInfo", "uint32 GetMailSenderCount()", asFUNCTION(CharInfo_GetMailSenderCount), asCALL_CDECL_OBJFIRST);
 

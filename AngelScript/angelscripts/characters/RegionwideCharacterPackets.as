@@ -3,6 +3,7 @@
  * Packet functions for regionwide character data
  * These are CHARACTER packets, not BattlePay packets
  */
+#include "RegionwideCharacterOpcodes.as"
 
 // ============================================================================
 // SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA (0x420019)
