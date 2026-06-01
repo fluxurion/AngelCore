@@ -271,6 +271,39 @@ namespace AngelScript
         result->RegionwideCharacters.clear();
     }
 
+    static WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* EnumResult_AddRegionwideCharacter(
+        WorldPackets::Character::EnumCharactersResult* result,
+        uint64_t guidLow,
+        const std::string& name,
+        uint8_t raceID,
+        uint8_t classID,
+        uint8_t sexID,
+        uint8_t level,
+        uint64_t money,
+        float itemLevel)
+    {
+        if (!result) return nullptr;
+
+        // Create new entry with default values
+        WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry entry{};
+
+        // Set Basic info
+        entry.Basic.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
+        entry.Basic.Name = name;
+        entry.Basic.RaceID = raceID;
+        entry.Basic.ClassID = classID;
+        entry.Basic.SexID = sexID;
+        entry.Basic.ExperienceLevel = level;
+
+        // Set Regionwide-specific data
+        entry.Money = money;
+        entry.AvgEquippedItemLevel = itemLevel;
+
+        // Add to vector and return pointer to the stored entry
+        result->RegionwideCharacters.push_back(entry);
+        return &result->RegionwideCharacters.back();
+    }
+
     void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result)
     {
         ClearWarbandGroupNameStorage(result);
@@ -323,5 +356,6 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "RegionwideCharacterInfo@ GetRegionwideCharacter(uint32 index)", asFUNCTION(EnumResult_GetRegionwideCharacter), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "RegionwideCharacterInfo@ FindRegionwideCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindRegionwideCharacterByGuid), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearRegionwideCharacters()", asFUNCTION(EnumResult_ClearRegionwideCharacters), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "RegionwideCharacterInfo@ AddRegionwideCharacter(uint64 guidLow, const string& in name, uint8 raceID, uint8 classID, uint8 sexID, uint8 level, uint64 money, float itemLevel)", asFUNCTION(EnumResult_AddRegionwideCharacter), asCALL_CDECL_OBJFIRST);
     }
 }

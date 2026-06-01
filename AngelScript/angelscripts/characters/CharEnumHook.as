@@ -9,50 +9,53 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     if (result is null)
         return;
 
-    uint32 count = result.GetRegionwideCharacterCount();
-    for (uint32 i = 0; i < count; i++)
+    // Clear existing RegionwideCharacters (TC doesn't populate them)
+    result.ClearRegionwideCharacters();
+
+    // Get all regular characters from the result
+    uint32 charCount = result.GetCharacterCount();
+    for (uint32 i = 0; i < charCount; i++)
     {
-        RegionwideCharacterInfo@ charInfo = result.GetRegionwideCharacter(i);
+        CharEnumCharacterInfo@ charInfo = result.GetCharacter(i);
         if (charInfo is null)
             continue;
 
         uint64 guid = charInfo.GetGuid();
+        string name = charInfo.GetName();
+        uint8 race = charInfo.GetRace();
+        uint8 classId = charInfo.GetClass();
+        uint8 gender = charInfo.GetGender();
+        uint8 level = charInfo.GetLevel();
 
-        // 1. Money (characters.money)
+        // Query money from database
+        uint64 money = 0;
         QueryResult@ moneyResult = CharacterQuery(
             "SELECT money FROM characters WHERE guid = " + guid);
         if (moneyResult !is null && moneyResult.NextRow())
         {
-            charInfo.SetMoney(moneyResult.GetUInt64(0));
+            money = moneyResult.GetUInt64(0);
         }
 
-        // 2. Average Item Level (character_inventory + item_instance)
+        // Query average item level from database
+        float avgIlvl = 0.0f;
         QueryResult@ ilvlResult = CharacterQuery(
             "SELECT AVG(ii.itemLevel) FROM character_inventory ci " +
             "JOIN item_instance ii ON ci.item = ii.guid " +
             "WHERE ci.guid = " + guid + " AND ci.bag = 0 AND ci.slot < 19");
         if (ilvlResult !is null && ilvlResult.NextRow())
         {
-            float avgIlvl = ilvlResult.GetFloat(0);
-            if (avgIlvl > 0)
-                charInfo.SetAvgItemLevel(avgIlvl);
+            avgIlvl = ilvlResult.GetFloat(0);
         }
 
-        // 3. Mythic+ Score - TODO: implement custom table
-        // QueryResult@ mythicResult = CharacterQuery(
-        //     "SELECT overall_score FROM character_mythic_plus WHERE guid = " + guid);
-        // if (mythicResult !is null && mythicResult.NextRow())
-        //     charInfo.SetMythicPlusScore(mythicResult.GetFloat(0));
+        // Add new RegionwideCharacter with all data
+        RegionwideCharacterInfo@ regionChar = result.AddRegionwideCharacter(
+            guid, name, race, classId, gender, level, money, avgIlvl);
 
-        // 4. PvP Rating - TODO: implement custom table
-        // QueryResult@ pvpResult = CharacterQuery(
-        //     "SELECT rating, bracket, spec_id FROM character_pvp_rating " +
-        //     "WHERE guid = " + guid + " ORDER BY season DESC LIMIT 1");
-        // if (pvpResult !is null && pvpResult.NextRow())
+        // TODO: Mythic+ Score and PvP Rating when custom tables are ready
+        // if (regionChar !is null)
         // {
-        //     charInfo.SetPvpRating(pvpResult.GetUInt32(0));
-        //     charInfo.SetPvpBracket(pvpResult.GetInt8(1));
-        //     charInfo.SetPvpSpecId(pvpResult.GetInt16(2));
+        //     regionChar.SetMythicPlusScore(...);
+        //     regionChar.SetPvpRating(...);
         // }
     }
 }
