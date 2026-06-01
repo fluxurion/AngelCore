@@ -81,6 +81,91 @@ namespace AngelScript
         return static_cast<uint32>(info->RestrictionsAndMails.MailSenders.size());
     }
 
+    // ---- RegionwideCharacterInfo helpers ----
+    static uint64_t RegionwideInfo_GetGuid(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0;
+        return info->Basic.Guid.GetCounter();
+    }
+
+    static std::string RegionwideInfo_GetName(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return "";
+        return std::string(info->Basic.Name);
+    }
+
+    static uint64_t RegionwideInfo_GetMoney(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0;
+        return info->Money;
+    }
+
+    static void RegionwideInfo_SetMoney(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, uint64_t money)
+    {
+        if (!info) return;
+        info->Money = money;
+    }
+
+    static float RegionwideInfo_GetAvgItemLevel(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0.0f;
+        return info->AvgEquippedItemLevel;
+    }
+
+    static void RegionwideInfo_SetAvgItemLevel(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, float itemLevel)
+    {
+        if (!info) return;
+        info->AvgEquippedItemLevel = itemLevel;
+    }
+
+    static float RegionwideInfo_GetMythicPlusScore(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0.0f;
+        return info->CurrentSeasonMythicPlusOverallScore;
+    }
+
+    static void RegionwideInfo_SetMythicPlusScore(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, float score)
+    {
+        if (!info) return;
+        info->CurrentSeasonMythicPlusOverallScore = score;
+    }
+
+    static uint32_t RegionwideInfo_GetPvpRating(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0;
+        return info->CurrentSeasonBestPvpRating;
+    }
+
+    static void RegionwideInfo_SetPvpRating(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, uint32_t rating)
+    {
+        if (!info) return;
+        info->CurrentSeasonBestPvpRating = rating;
+    }
+
+    static int8_t RegionwideInfo_GetPvpBracket(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0;
+        return info->PvpRatingBracket;
+    }
+
+    static void RegionwideInfo_SetPvpBracket(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, int8_t bracket)
+    {
+        if (!info) return;
+        info->PvpRatingBracket = bracket;
+    }
+
+    static int16_t RegionwideInfo_GetPvpSpecId(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info)
+    {
+        if (!info) return 0;
+        return info->PvpRatingAssociatedSpecID;
+    }
+
+    static void RegionwideInfo_SetPvpSpecId(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, int16_t specId)
+    {
+        if (!info) return;
+        info->PvpRatingAssociatedSpecID = specId;
+    }
+
     // ---- EnumCharactersResult helpers ----
     static uint32 EnumResult_GetCharacterCount(WorldPackets::Character::EnumCharactersResult* result)
     {
@@ -156,6 +241,36 @@ namespace AngelScript
         result->WarbandGroups[groupIndex].Members.push_back(std::move(member));
     }
 
+    // ---- RegionwideCharacter helpers ----
+    static uint32_t EnumResult_GetRegionwideCharacterCount(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return 0;
+        return static_cast<uint32>(result->RegionwideCharacters.size());
+    }
+
+    static WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* EnumResult_GetRegionwideCharacter(WorldPackets::Character::EnumCharactersResult* result, uint32 index)
+    {
+        if (!result || index >= result->RegionwideCharacters.size()) return nullptr;
+        return &result->RegionwideCharacters[index];
+    }
+
+    static WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* EnumResult_FindRegionwideCharacterByGuid(WorldPackets::Character::EnumCharactersResult* result, uint64_t guidLow)
+    {
+        if (!result) return nullptr;
+        for (auto& character : result->RegionwideCharacters)
+        {
+            if (character.Basic.Guid.GetCounter() == guidLow)
+                return &character;
+        }
+        return nullptr;
+    }
+
+    static void EnumResult_ClearRegionwideCharacters(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return;
+        result->RegionwideCharacters.clear();
+    }
+
     void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result)
     {
         ClearWarbandGroupNameStorage(result);
@@ -185,5 +300,28 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetWarbandGroupCount()", asFUNCTION(EnumResult_GetWarbandGroupCount), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroup(uint64 groupId, uint8 orderIndex, uint32 warbandSceneId, uint32 flags, int32 contentSetID, const string& in name)", asFUNCTION(EnumResult_AddWarbandGroup), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroupMember(uint32 groupIndex, uint32 slotIndex, int32 memberType, int32 contentSetID, uint64 guidLow)", asFUNCTION(EnumResult_AddWarbandGroupMember), asCALL_CDECL_OBJFIRST);
+
+        // Register RegionwideCharacterInfo type
+        engine->RegisterObjectType("RegionwideCharacterInfo", 0, asOBJ_REF | asOBJ_NOCOUNT);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "uint64 GetGuid()", asFUNCTION(RegionwideInfo_GetGuid), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "string GetName()", asFUNCTION(RegionwideInfo_GetName), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "uint64 GetMoney()", asFUNCTION(RegionwideInfo_GetMoney), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetMoney(uint64 money)", asFUNCTION(RegionwideInfo_SetMoney), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "float GetAvgItemLevel()", asFUNCTION(RegionwideInfo_GetAvgItemLevel), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetAvgItemLevel(float itemLevel)", asFUNCTION(RegionwideInfo_SetAvgItemLevel), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "float GetMythicPlusScore()", asFUNCTION(RegionwideInfo_GetMythicPlusScore), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetMythicPlusScore(float score)", asFUNCTION(RegionwideInfo_SetMythicPlusScore), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "uint32 GetPvpRating()", asFUNCTION(RegionwideInfo_GetPvpRating), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetPvpRating(uint32 rating)", asFUNCTION(RegionwideInfo_SetPvpRating), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "int8 GetPvpBracket()", asFUNCTION(RegionwideInfo_GetPvpBracket), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetPvpBracket(int8 bracket)", asFUNCTION(RegionwideInfo_SetPvpBracket), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "int16 GetPvpSpecId()", asFUNCTION(RegionwideInfo_GetPvpSpecId), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetPvpSpecId(int16 specId)", asFUNCTION(RegionwideInfo_SetPvpSpecId), asCALL_CDECL_OBJFIRST);
+
+        // RegionwideCharacter methods on EnumCharactersResult
+        engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetRegionwideCharacterCount()", asFUNCTION(EnumResult_GetRegionwideCharacterCount), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "RegionwideCharacterInfo@ GetRegionwideCharacter(uint32 index)", asFUNCTION(EnumResult_GetRegionwideCharacter), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "RegionwideCharacterInfo@ FindRegionwideCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindRegionwideCharacterByGuid), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void ClearRegionwideCharacters()", asFUNCTION(EnumResult_ClearRegionwideCharacters), asCALL_CDECL_OBJFIRST);
     }
 }
