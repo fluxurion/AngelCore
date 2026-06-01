@@ -35,6 +35,8 @@
 #include "../ASPacketData.h"
 #include "../Hooks/ASPacketHooks.h"
 #include "ByteBuffer.h"
+#include "ObjectGuid.h"
+#include "World.h"
 
 namespace AngelScript
 {
@@ -135,11 +137,24 @@ namespace AngelScript
         }
         pd->data[maskPos] = mask;
     }
+    // PackedGuid128 (TC/client format): [lowMask][highMask][low non-zero bytes][high non-zero bytes].
+    // Delegates to PacketData::WritePackedGuid which writes both mask bytes first, matching the
+    // client's ReadPackedGuid128. The previous inline implementation interleaved the masks
+    // ([lowMask][lowBytes][highMask][highBytes]) which misaligned the client parser.
     static void PD_WritePackedGuid(PacketData* pd, uint64 low, uint64 high)
     {
         if (!pd) return;
-        PD_WritePackedUInt64(pd, low);
-        PD_WritePackedUInt64(pd, high);
+        pd->WritePackedGuid(low, high);
+    }
+
+    // Helper to build full player GUID from low counter (dbId).
+    // Returns both low and high parts of the 128-bit GUID.
+    // High part encodes: HighGuid::Player, realm ID, subtype.
+    static void BuildPlayerGuid(uint64 guidLow, uint64& outLow, uint64& outHigh)
+    {
+        ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
+        outLow = guid.GetCounter();
+        outHigh = guid.GetHigh();
     }
 
     static void PD_WriteUInt8(PacketData* pd, uint8 v) { if (pd) pd->WriteUInt8(v); }
@@ -350,6 +365,9 @@ namespace AngelScript
 
         // Factory
         r = _scriptEngine->RegisterGlobalFunction("PacketData@ CreatePacketData(uint32)", asFUNCTION(PD_Factory), asCALL_CDECL);
+
+        // GUID helpers
+        r = _scriptEngine->RegisterGlobalFunction("void BuildPlayerGuid(uint64, uint64 &out, uint64 &out)", asFUNCTION(BuildPlayerGuid), asCALL_CDECL);
 
         // Send
         r = _scriptEngine->RegisterGlobalFunction("void SendPacketToPlayer(Player@, PacketData@)", asFUNCTION(PD_SendToPlayer), asCALL_CDECL);

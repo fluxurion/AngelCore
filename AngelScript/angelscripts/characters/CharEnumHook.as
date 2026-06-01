@@ -32,9 +32,11 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
             continue;
 
         uint64 guid = charInfo.GetGuid();
-        // Convert guid to low/high parts (packed guid format)
-        characterGuidsLow.insertLast(guid);
-        characterGuidsHigh.insertLast(0);  // High part is 0 for player GUIDs in most cases
+        // Build full player GUID with correct high part encoding realm and type info
+        uint64 guidLow, guidHigh;
+        BuildPlayerGuid(guid, guidLow, guidHigh);
+        characterGuidsLow.insertLast(guidLow);
+        characterGuidsHigh.insertLast(guidHigh);
 
         // Get character data with explicit initialization
         string name = charInfo.GetName();
