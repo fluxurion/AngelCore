@@ -502,6 +502,12 @@ void WorldSession::HandleCharEnum(CharacterDatabaseQueryHolder const& holder)
 
     SendPacket(charEnum.Write());
 
+#ifdef ANGELSCRIPT_INTEGRATION
+    // Allow AngelScript to send follow-up packets after char enum
+    if (sAngelScriptMgr->IsEnabled())
+        sAngelScriptMgr->TriggerCustomHook_PostCharEnum(this);
+#endif
+
     if (!charEnum.IsDeletedCharacters)
         _collectionMgr->SendWarbandSceneCollectionData();
 }

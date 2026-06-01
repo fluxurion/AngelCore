@@ -296,6 +296,12 @@ namespace AngelScript
         result->RegionwideCharacters.clear();
     }
 
+    static void EnumResult_ClearCharacters(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return;
+        result->Characters.clear();
+    }
+
     static WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* EnumResult_AddRegionwideCharacter(
         WorldPackets::Character::EnumCharactersResult* result,
         uint64_t guidLow,
@@ -358,6 +364,7 @@ namespace AngelScript
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetCharacterCount()", asFUNCTION(EnumResult_GetCharacterCount), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ GetCharacter(uint32 index)", asFUNCTION(EnumResult_GetCharacter), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "CharEnumCharacterInfo@ FindCharacterByGuid(uint64 guidLow)", asFUNCTION(EnumResult_FindCharacterByGuid), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void ClearCharacters()", asFUNCTION(EnumResult_ClearCharacters), asCALL_CDECL_OBJFIRST);
 
         // Warband group methods
         engine->RegisterObjectMethod("EnumCharactersResult", "bool IsDeletedCharacters()", asFUNCTION(EnumResult_IsDeletedCharacters), asCALL_CDECL_OBJFIRST);

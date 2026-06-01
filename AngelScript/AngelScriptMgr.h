@@ -205,6 +205,7 @@ namespace AngelScript
         bool TriggerCustomHook_SendPlayerChoice(Player* player, int32 choiceId);
         bool TriggerCustomHook_GetLockedDungeons(Player* player, std::vector<uint32>& lockedDungeons);
         bool TriggerCustomHook_CharEnum(WorldSession* session, WorldPackets::Character::EnumCharactersResult& enumResult);
+        void TriggerCustomHook_PostCharEnum(WorldSession* session);
         bool TriggerCustomHook_AuthResponse(WorldSession* session, uint32& currencyID);
         bool TriggerCustomHook_FeatureSystemStatusGlueScreen(WorldSession* session, bool& bpayStoreAvailable, int32& activeBoostType, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds, int32& contentSetID);
         bool TriggerCustomHook_FeatureSystemStatus(WorldSession* session, bool& bpayStoreAvailable, bool& commerceServerEnabled, uint32& commercePricePollTimeSeconds);
