@@ -370,38 +370,20 @@ void SendProductList(WorldSession@ session, bool autoOpen)
 }
 
 // ============================================================================
-// SendCharacterService4218B4 — matches parser SMSG_4218B4
-// Structure: ProductID, Field260-21856, NameLength, Flags2, Flags3, ItemLoop, Name, VisualMetadata
+// SendUnknownBeforeCharEnum — matches parser SMSG_UNKNOWN_BEFORE_CHAR_ENUM (0x420224)
+// Structure: PackedGuid128(Guid) + ReadDisplayCard
 // ============================================================================
-void SendCharacterService4218B4(WorldSession@ session)
+void SendUnknownBeforeCharEnum(WorldSession@ session, uint64 guidLow)
 {
-    PacketData@ pd = CreatePacketData(SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4);
+    PacketData@ pd = CreatePacketData(SMSG_UNKNOWN_BEFORE_CHAR_ENUM);
 
-    // Fixed uint32 fields
-    pd.WriteUInt32(0);   // ProductID
-    pd.WriteUInt32(0);   // Field260
-    pd.WriteUInt32(0);   // Field264
-    pd.WriteUInt32(0);   // Field268
-    pd.WriteUInt32(0);   // Field272
-    pd.WriteUInt32(0);   // Field276
-    pd.WriteUInt32(0);   // Field280
-    pd.WriteUInt32(0);   // Field296
-    pd.WriteUInt32(0);   // Field21840
-    pd.WriteUInt32(0);   // Field21844
-    pd.WriteUInt32(0);   // Field21848
-    pd.WriteUInt32(0);   // Field21852
-    pd.WriteUInt32(0);   // Field21856
+    // WritePackedGuid128 - write as 2 uint64s (high + low parts)
+    // guidLow is the low 64 bits, high part is 0 for player GUIDs
+    pd.WriteUInt64(0);           // High part (type flags)
+    pd.WriteUInt64(guidLow);     // Low part (GUID counter)
 
-    // NameLength, Flags2, Flags3
-    pd.WriteUInt8(0);    // NameLength = 0 (no name)
-    pd.WriteUInt8(0);    // Flags2 (bit7=AlreadyOwned, bits0-5=itemCountBits)
-    pd.WriteUInt8(0);    // Flags3 (bit7=itemCount high bit, bit6=hasDisplayCard)
-
-    // No item loop since itemCount = (flags3>>7) | (2*(flags2&0x3F)) = 0
-
-    // No name string since nameLen = 0
-
-    // No VisualMetadata since Flags3 bit6 = 0
+    // ReadDisplayCard = VisualMetadata = WriteDisplayInfo with null (empty/default)
+    WriteDisplayInfo(pd, null);
 
     session.SendPacket(pd);
 }

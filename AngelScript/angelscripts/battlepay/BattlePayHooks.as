@@ -45,21 +45,21 @@ bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable)
 // for C_StoreSecure.HasDistributionList() to pass on the client.
 //
 // REFACTORED: Packet order matches retail log:
-//   1. SMSG_BATTLE_PAY_GET_PURCHASE_LIST_RESPONSE (sent via HandleGetPurchaseList on CMSG)
-//   2. SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4 (after purchase list)
-//   3. SMSG_DISPLAY_PROMOTION
-//   4. SMSG_BATTLE_PAY_GET_DISTRIBUTION_LIST_RESPONSE
-//   5. SMSG_ACCOUNT_STORE_CURRENCY_UPDATE
-//   6. SMSG_CATALOG_SHOP_OBTAIN_LICENSE
-//   7. SMSG_SYNC_WOW_ENTITLEMENTS
+//   1. SMSG_UNKNOWN_BEFORE_CHAR_ENUM (0x420224) - contains Guid + DisplayCard
+//   2. SMSG_DISPLAY_PROMOTION
+//   3. SMSG_BATTLE_PAY_GET_DISTRIBUTION_LIST_RESPONSE
+//   4. SMSG_ACCOUNT_STORE_CURRENCY_UPDATE
+//   5. SMSG_CATALOG_SHOP_OBTAIN_LICENSE
+//   6. SMSG_SYNC_WOW_ENTITLEMENTS
 // ============================================================================
 void OnSessionInitialized(WorldSession@ session)
 {
     if (session is null)
         return;
 
-    // SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4 - sent after purchase list (empty = no active services)
-    SendCharacterService4218B4(session);
+    // SMSG_UNKNOWN_BEFORE_CHAR_ENUM (0x420224) - sent before/around char enum
+    // Contains PackedGuid128 + DisplayCard. Using session's account GUID.
+    SendUnknownBeforeCharEnum(session, session.GetAccountId());
 
     // SMSG_DISPLAY_PROMOTION - clear promotion popup
     SendPromotion(session);

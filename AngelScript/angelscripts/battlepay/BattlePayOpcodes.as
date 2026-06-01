@@ -75,7 +75,7 @@ const uint32 SMSG_SYNC_WOW_ENTITLEMENTS                              = 0x4202FC;
 // ADDITIONAL UNDOCUMENTED SMSG OPCODES
 // ============================================================================
 
-const uint32 SMSG_BATTLE_PAY_CHARACTER_SERVICE_4218B4                = 0x4218B4;  // Unknown - sent after purchase list, contains character service data
+const uint32 SMSG_UNKNOWN_BEFORE_CHAR_ENUM                         = 0x420224;  // 4325924 decimal - sent before/around char enum, contains Guid + DisplayCard
 
 // ============================================================================
 // BATTLEPAY PRODUCT TYPE CONSTANTS
