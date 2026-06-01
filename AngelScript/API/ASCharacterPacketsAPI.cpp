@@ -30,6 +30,7 @@
 #include "AngelScriptMgr.h"
 #include "Server/Packets/CharacterPackets.h"
 #include "Database/DatabaseEnv.h"
+#include "World/World.h"
 #include <sstream>
 #include <unordered_map>
 #include <deque>
@@ -314,6 +315,10 @@ namespace AngelScript
 
         // Set Basic info
         entry.Basic.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
+        // VirtualRealmAddress must match the current realm so the client associates
+        // this regionwide entry with the realm and displays its data (money, ilvl, ...).
+        // The default-constructed entry leaves this at 0, which the client rejects.
+        entry.Basic.VirtualRealmAddress = GetVirtualRealmAddress();
         entry.Basic.Name = name;
         entry.Basic.RaceID = raceID;
         entry.Basic.ClassID = classID;

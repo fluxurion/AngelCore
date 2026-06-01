@@ -50,26 +50,15 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
         level = charInfo.GetLevel();
 
         // Query money from database
+        // CharacterQuery uses TC's CharacterDatabase (the DB configured in worldserver.conf).
+        // NOTE: the ResultSet is already positioned at the first row on return, so we read
+        // directly. Call NextRow() only to advance to subsequent rows.
         uint64 money = 0;
         string moneyQuery = "SELECT money FROM characters WHERE guid = " + guid;
-        Print("[CharEnumHook] Money query: " + moneyQuery);
         QueryResult@ moneyResult = CharacterQuery(moneyQuery);
-        if (moneyResult !is null)
+        if (moneyResult !is null && moneyResult.GetRowCount() > 0)
         {
-            Print("[CharEnumHook] Money query returned result");
-            if (moneyResult.NextRow())
-            {
-                money = moneyResult.GetUInt64(0);
-                Print("[CharEnumHook] Money from DB: " + money);
-            }
-            else
-            {
-                Print("[CharEnumHook] Money query has no rows");
-            }
-        }
-        else
-        {
-            Print("[CharEnumHook] Money query returned null");
+            money = moneyResult.GetUInt64(0);
         }
 
         // TODO: Query average item level from world.item_template via C++ API
