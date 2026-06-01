@@ -284,8 +284,9 @@ namespace AngelScript
     {
         if (!result) return nullptr;
 
-        // Create new entry with default values
-        WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry entry{};
+        // Create new entry directly in vector (RegionwideCharacterListEntry has no default ctor)
+        result->RegionwideCharacters.emplace_back();
+        auto& entry = result->RegionwideCharacters.back();
 
         // Set Basic info
         entry.Basic.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
@@ -299,9 +300,7 @@ namespace AngelScript
         entry.Money = money;
         entry.AvgEquippedItemLevel = itemLevel;
 
-        // Add to vector and return pointer to the stored entry
-        result->RegionwideCharacters.push_back(entry);
-        return &result->RegionwideCharacters.back();
+        return &entry;
     }
 
     void CleanupWarbandGroupStorage(WorldPackets::Character::EnumCharactersResult* result)
