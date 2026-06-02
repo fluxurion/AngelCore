@@ -291,7 +291,8 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
 
     // Retail packet: no ClassDisableMask, IsNewPlayer = true
     enumResult.ClearClassDisableMask();
-    enumResult.SetNewPlayer(true);
+    // IsNewPlayer maps to IsNewcomerChatCompleted in the C++ struct
+    enumResult.SetNewcomerChatCompleted(true);
 
     uint32 accountId = session.GetAccountId();
 
