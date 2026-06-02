@@ -376,6 +376,19 @@ ByteBuffer& operator<<(ByteBuffer& data, WarbandGroup const& warbandGroup)
 {
     data << uint64(warbandGroup.GroupID);
     data << uint8(warbandGroup.OrderIndex);
+
+    // Name: 2-byte encoded length (retail 11.x wire format)
+    // byte1 = bits [8:1] of length, byte2 has bit [0] as MSB
+    // Name comes BEFORE WarbandSceneID on the wire
+    {
+        uint32 nameLen = static_cast<uint32>(warbandGroup.Name.size());
+        uint8 byte1 = static_cast<uint8>(nameLen >> 1);
+        uint8 byte2 = static_cast<uint8>((nameLen & 1) << 7);
+        data << uint8(byte1);
+        data << uint8(byte2);
+        data.append(warbandGroup.Name.data(), nameLen);
+    }
+
     data << uint32(warbandGroup.WarbandSceneID);
     data << uint32(warbandGroup.Flags);
     data << int32(warbandGroup.ContentSetID);
@@ -383,11 +396,6 @@ ByteBuffer& operator<<(ByteBuffer& data, WarbandGroup const& warbandGroup)
 
     for (WarbandGroupMember const& member : warbandGroup.Members)
         data << member;
-
-    data << SizedString::BitsSize<9>(warbandGroup.Name);
-    data.FlushBits();
-
-    data << SizedString::Data(warbandGroup.Name);
 
     return data;
 }
