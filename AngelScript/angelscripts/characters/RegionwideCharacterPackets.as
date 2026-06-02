@@ -88,10 +88,10 @@ void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ chara
             uint32 unreadCount = mailResult.GetRowCount();
             pd.WriteUInt32(unreadCount);  // MailEntryCount
 
-            do
+            // NextRow() must be called BEFORE reading the first row
+            while (mailResult.NextRow())
             {
                 uint64 mailId = mailResult.GetUInt64(0);
-                uint64 mailSenderGuid = mailResult.GetUInt64(1);
                 string mailSubject = mailResult.GetString(2);
 
                 // Write mail ID as packed128 guid (low = mailId, high = 0)
@@ -99,7 +99,6 @@ void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ chara
                 // Write mail subject
                 pd.WriteString(mailSubject);
             }
-            while (mailResult.NextRow());
 
             Print("[RegionwideMail] Character " + guidLow + " has " + unreadCount + " unread mails");
         }
