@@ -34,6 +34,7 @@ namespace AngelScript
         ON_UPDATE_ZONE,     // Zone updates
         ON_SCENE_END,       // Scene ends
         ON_SCENE_CANCEL,    // Scene cancelled
+        ON_SAVE,            // Player saves to DB
         COUNT
     };
 

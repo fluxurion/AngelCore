@@ -70,6 +70,7 @@ namespace AngelScript
     static uint64 Player_GetMaxHealth(Player* p) { return p ? p->GetMaxHealth() : 0; }
     static float Player_GetHealthPct(Player* p) { return p ? p->GetHealthPct() : 0.f; }
     static uint64 Player_GetMoney(Player* p) { return p ? p->GetMoney() : 0; }
+    static float Player_GetAverageItemLevel(Player* p) { return p ? p->GetAverageItemLevel() : 0.f; }
     static bool Player_ModifyMoney(Player* p, int64 amount) { return p ? p->ModifyMoney(amount) : false; }
     static uint32 Player_GetItemCount(Player* p, uint32 item, bool inBank) { return p ? p->GetItemCount(item, inBank) : 0; }
     static bool Player_HasItemCount(Player* p, uint32 item, uint32 count) { return p ? p->HasItemCount(item, count) : false; }
@@ -233,6 +234,7 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Player", "uint64 GetMoney() const", asFUNCTION(Player_GetMoney), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "bool ModifyMoney(int64)", asFUNCTION(Player_ModifyMoney), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "void AddMoney(uint64)", asFUNCTION(Player_AddMoney), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "float GetAverageItemLevel() const", asFUNCTION(Player_GetAverageItemLevel), asCALL_CDECL_OBJFIRST);
 
         // Inventory
         r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetItemCount(uint32, bool) const", asFUNCTION(Player_GetItemCount), asCALL_CDECL_OBJFIRST);
