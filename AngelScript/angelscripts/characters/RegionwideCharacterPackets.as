@@ -42,6 +42,16 @@ void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64
 // Structure: Count + [Type(byte), Guid(packed128), SenderCount, Senders[],
 //                      EntryCount, Entries[Guid, Subject]]
 // Type: upper 3 bits of first byte
+//
+// Mail checked field bitmask (from TrinityCore characters.mail):
+//   MAIL_CHECK_MASK_READ        = 1    (mail has been read)
+//   MAIL_CHECK_MASK_RETURNED    = 2    (mail was returned)
+//   MAIL_CHECK_MASK_COD_PAYMENT = 4    (COD payment taken)
+//   MAIL_CHECK_MASK_HAS_BODY    = 8    (mail has body text)
+//   MAIL_CHECK_MASK_UNK5        = 16   (unchecked / unread flag)
+//
+// To find unread mail: (checked & 16) = 16
+// To find read mail:   (checked & 1) = 1
 // ============================================================================
 void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh)
 {
@@ -52,15 +62,53 @@ void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ chara
 
     for (uint32 i = 0; i < count; i++)
     {
-        uint8 type = 0;  // Type in upper 3 bits (0 for now)
+        uint64 guidLow = characterGuidsLow[i];
+        uint64 guidHigh = characterGuidsHigh[i];
+
+        // Query unread mail for this character
+        // checked & 16 = 16 means mail is unchecked/unread in TrinityCore
+        string mailQuery = "SELECT id, sender, subject, checked FROM mail WHERE receiver = "
+            + guidLow + " AND (checked & 16) = 16";
+
+        QueryResult@ mailResult = CharacterQuery(mailQuery);
+
+        uint8 type = 0;  // Type in upper 3 bits (0 = normal mail data)
         pd.WriteUInt8(type);
-        pd.WritePackedGuid(characterGuidsLow[i], characterGuidsHigh[i]);
+        pd.WritePackedGuid(guidLow, guidHigh);
 
-        // MailSenderCount = 0 (no senders)
-        pd.WriteUInt32(0);
+        if (mailResult !is null && mailResult.GetRowCount() > 0)
+        {
+            // Collect unique senders to build sender list
+            // For simplicity, we count unique senders per character
+            // In TrinityCore, this is the count of unique sender GUIDs
+            uint32 senderCount = 0;
+            pd.WriteUInt32(senderCount);  // MailSenderCount
 
-        // MailEntryCount = 0 (no mail entries)
-        pd.WriteUInt32(0);
+            // Write unread mail entries
+            uint32 unreadCount = mailResult.GetRowCount();
+            pd.WriteUInt32(unreadCount);  // MailEntryCount
+
+            do
+            {
+                uint64 mailId = mailResult.GetUInt64(0);
+                uint64 mailSenderGuid = mailResult.GetUInt64(1);
+                string mailSubject = mailResult.GetString(2);
+
+                // Write mail ID as packed128 guid (low = mailId, high = 0)
+                pd.WritePackedGuid(mailId, 0);
+                // Write mail subject
+                pd.WriteString(mailSubject);
+            }
+            while (mailResult.NextRow());
+
+            Print("[RegionwideMail] Character " + guidLow + " has " + unreadCount + " unread mails");
+        }
+        else
+        {
+            // No unread mail for this character
+            pd.WriteUInt32(0);  // MailSenderCount = 0
+            pd.WriteUInt32(0);  // MailEntryCount = 0
+        }
     }
 
     session.SendPacket(pd);
