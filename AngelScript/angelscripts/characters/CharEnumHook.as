@@ -15,7 +15,7 @@
 
 // Profession SkillLine IDs (retail 11.x) — matched against character_skills
 // to populate ProfessionIds[2] on RegionwideCharacter entries.
-const uint32 PROFESSION_SKILL_IDS[] = {
+const array<uint32> PROFESSION_SKILL_IDS = {
     202, 773, 333, 755, 164, 171, 165, 197, 186, 182, 393
 };
 
