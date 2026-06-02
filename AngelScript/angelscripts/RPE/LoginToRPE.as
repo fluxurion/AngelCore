@@ -114,9 +114,9 @@ void OnPlayerLogin(Player@ player)
     uint64 guid = player.GetGUIDLow();
 
     // Check if this character has RPE login flag in AngelDB
-    QueryResult@ result = AngelDB_Query("SELECT rpe_login FROM character_datas WHERE guid = " + guid);
+    AngelDBResult result = AngelDB_Query("SELECT rpe_login FROM character_datas WHERE guid = " + guid);
 
-    if (result !is null && result.GetRowCount() > 0)
+    if (result.GetRowCount() > 0 && result.NextRow())
     {
         uint32 rpeLogin = result.GetUInt32(0);
         if (rpeLogin == 1)
@@ -124,8 +124,8 @@ void OnPlayerLogin(Player@ player)
             Print("[RPE] Player " + player.GetName() + " logged in with RPE - casting spells");
 
             // Cast RPE spells
-            player.CastSpell(player, SPELL_APPLY_RPE, true);
-            player.CastSpell(player, SPELL_PLAY_TIMELINE_SCENE, true);
+            player.CastSpell(player, SPELL_APPLY_RPE);
+            player.CastSpell(player, SPELL_PLAY_TIMELINE_SCENE);
 
             // TODO: Add gear from loadout (commented out for now)
             // AddRPESetGear(player);
@@ -166,8 +166,8 @@ void OnSceneEnd(Player@ player, uint32 sceneId)
         Print("[RPE] Scene ended for player " + player.GetName() + " - casting post-scene spells");
 
         // Cast post-scene spells
-        player.CastSpell(player, SPELL_APPLY_RPE_WALKING, true);
-        player.CastSpell(player, SPELL_PLAY_CAMERA_GRAB_SCENE, true);
+        player.CastSpell(player, SPELL_APPLY_RPE_WALKING);
+        player.CastSpell(player, SPELL_PLAY_CAMERA_GRAB_SCENE);
     }
 }
 
