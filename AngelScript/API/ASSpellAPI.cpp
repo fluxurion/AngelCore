@@ -28,12 +28,60 @@
 #pragma pop_macro("IN")
 
 #include "Spell.h"
+#include "SpellDefines.h"
 #include "Unit.h"
 #include "SpellInfo.h"
 #include "Log.h"
 
 namespace AngelScript
 {
+    // ---- CastSpellExtraArgs wrapper ----
+    static CastSpellExtraArgs* CastSpellExtraArgs_Factory()
+    {
+        return new CastSpellExtraArgs();
+    }
+
+    static CastSpellExtraArgs* CastSpellExtraArgs_FactoryTriggered(bool triggered)
+    {
+        return new CastSpellExtraArgs(triggered);
+    }
+
+    static void CastSpellExtraArgs_Destructor(CastSpellExtraArgs* args)
+    {
+        delete args;
+    }
+
+    static void CastSpellExtraArgs_AddSpellMod(CastSpellExtraArgs* args, SpellValueMod mod, int32 val)
+    {
+        if (args) args->AddSpellMod(mod, val);
+    }
+
+    static void CastSpellExtraArgs_AddSpellModFloat(CastSpellExtraArgs* args, SpellValueModFloat mod, float val)
+    {
+        if (args) args->AddSpellMod(mod, val);
+    }
+
+    static void CastSpellExtraArgs_SetTriggerFlags(CastSpellExtraArgs* args, uint32 flags)
+    {
+        if (args) args->SetTriggerFlags(static_cast<TriggerCastFlags>(flags));
+    }
+
+    // ---- CastSpellTargetArg wrapper ----
+    static CastSpellTargetArg* CastSpellTargetArg_Factory()
+    {
+        return new CastSpellTargetArg();
+    }
+
+    static CastSpellTargetArg* CastSpellTargetArg_FactoryUnit(Unit* target)
+    {
+        return new CastSpellTargetArg(target);
+    }
+
+    static void CastSpellTargetArg_Destructor(CastSpellTargetArg* arg)
+    {
+        delete arg;
+    }
+
     // ---- Spell wrapper functions ----
     static uint32 Spell_GetSpellId(Spell* s) { return s ? s->GetSpellInfo()->Id : 0; }
     static Unit* Spell_GetCaster(Spell* s) { if (!s) return nullptr; WorldObject* caster = s->GetCaster(); return caster ? caster->ToUnit() : nullptr; }
@@ -85,7 +133,39 @@ namespace AngelScript
 
     void RegisterSpellAPI(asIScriptEngine* _scriptEngine)
     {
-        int r = _scriptEngine->RegisterObjectType("Spell", 0, asOBJ_REF | asOBJ_NOCOUNT);
+        int r;
+
+        // Register CastSpellExtraArgs type
+        r = _scriptEngine->RegisterObjectType("CastSpellExtraArgs", 0, asOBJ_REF | asOBJ_NOCOUNT);
+        if (r < 0 && r != asALREADY_REGISTERED)
+        {
+            TC_LOG_ERROR("angelscript", "Failed to register CastSpellExtraArgs type: {}", r);
+        }
+        else
+        {
+            r = _scriptEngine->RegisterObjectBehaviour("CastSpellExtraArgs", asBEHAVE_FACTORY, "CastSpellExtraArgs@ f()", asFUNCTION(CastSpellExtraArgs_Factory), asCALL_CDECL);
+            r = _scriptEngine->RegisterObjectBehaviour("CastSpellExtraArgs", asBEHAVE_FACTORY, "CastSpellExtraArgs@ f(bool)", asFUNCTION(CastSpellExtraArgs_FactoryTriggered), asCALL_CDECL);
+            r = _scriptEngine->RegisterObjectBehaviour("CastSpellExtraArgs", asBEHAVE_RELEASE, "void f()", asFUNCTION(CastSpellExtraArgs_Destructor), asCALL_CDECL_OBJFIRST);
+            r = _scriptEngine->RegisterObjectMethod("CastSpellExtraArgs", "void AddSpellMod(int32, int32)", asFUNCTION(CastSpellExtraArgs_AddSpellMod), asCALL_CDECL_OBJFIRST);
+            r = _scriptEngine->RegisterObjectMethod("CastSpellExtraArgs", "void AddSpellModFloat(int32, float)", asFUNCTION(CastSpellExtraArgs_AddSpellModFloat), asCALL_CDECL_OBJFIRST);
+            r = _scriptEngine->RegisterObjectMethod("CastSpellExtraArgs", "void SetTriggerFlags(uint32)", asFUNCTION(CastSpellExtraArgs_SetTriggerFlags), asCALL_CDECL_OBJFIRST);
+        }
+
+        // Register CastSpellTargetArg type
+        r = _scriptEngine->RegisterObjectType("CastSpellTargetArg", 0, asOBJ_REF | asOBJ_NOCOUNT);
+        if (r < 0 && r != asALREADY_REGISTERED)
+        {
+            TC_LOG_ERROR("angelscript", "Failed to register CastSpellTargetArg type: {}", r);
+        }
+        else
+        {
+            r = _scriptEngine->RegisterObjectBehaviour("CastSpellTargetArg", asBEHAVE_FACTORY, "CastSpellTargetArg@ f()", asFUNCTION(CastSpellTargetArg_Factory), asCALL_CDECL);
+            r = _scriptEngine->RegisterObjectBehaviour("CastSpellTargetArg", asBEHAVE_FACTORY, "CastSpellTargetArg@ f(Unit@)", asFUNCTION(CastSpellTargetArg_FactoryUnit), asCALL_CDECL);
+            r = _scriptEngine->RegisterObjectBehaviour("CastSpellTargetArg", asBEHAVE_RELEASE, "void f()", asFUNCTION(CastSpellTargetArg_Destructor), asCALL_CDECL_OBJFIRST);
+        }
+
+        // Register Spell type
+        r = _scriptEngine->RegisterObjectType("Spell", 0, asOBJ_REF | asOBJ_NOCOUNT);
         if (r < 0 && r != asALREADY_REGISTERED)
         {
             TC_LOG_ERROR("angelscript", "Failed to register Spell type: {}", r);

@@ -72,7 +72,11 @@ namespace AngelScript
 
     // ---- NEW: Missing critical API wrappers ----
     static void Creature_CastSpell(Creature* c, Unit* target, uint32 spellId) { if (c && target) c->CastSpell(target, spellId, true); }
+    static void Creature_CastSpell(Creature* c, Unit* target, uint32 spellId, bool triggered) { if (c && target) c->CastSpell(target, spellId, triggered); }
+    static void Creature_CastSpell(Creature* c, Unit* target, uint32 spellId, CastSpellExtraArgs const& args) { if (c && target) c->CastSpell(target, spellId, args); }
+    static void Creature_CastSpell(Creature* c, CastSpellTargetArg const& targetArg, uint32 spellId, CastSpellExtraArgs const& args) { if (c) c->CastSpell(targetArg, spellId, args); }
     static void Creature_CastSpellSelf(Creature* c, uint32 spellId) { if (c) c->CastSpell(c, spellId, true); }
+    static void Creature_CastSpellSelf(Creature* c, uint32 spellId, bool triggered) { if (c) c->CastSpell(c, spellId, triggered); }
     static void Creature_AddAura(Creature* c, uint32 spellId, Unit* caster) { if (c && caster) c->AddAura(spellId, caster); }
     static void Creature_RemoveAura(Creature* c, uint32 spellId) { if (c) c->RemoveAura(spellId); }
     static void Creature_RemoveAllAuras(Creature* c) { if (c) c->RemoveAllAuras(); }
@@ -155,8 +159,12 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Creature", "void AddAura(uint32, Unit@)", asFUNCTION(Creature_AddAura), asCALL_CDECL_OBJFIRST);
 
         // Spells
-        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpell(Unit@, uint32)", asFUNCTION(Creature_CastSpell), asCALL_CDECL_OBJFIRST);
-        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpellSelf(uint32)", asFUNCTION(Creature_CastSpellSelf), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpell(Unit@, uint32)", asFUNCTIONPR(Creature_CastSpell, (Creature*, Unit*, uint32), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpell(Unit@, uint32, bool)", asFUNCTIONPR(Creature_CastSpell, (Creature*, Unit*, uint32, bool), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpell(Unit@, uint32, CastSpellExtraArgs@)", asFUNCTIONPR(Creature_CastSpell, (Creature*, Unit*, uint32, CastSpellExtraArgs const&), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpell(CastSpellTargetArg@, uint32, CastSpellExtraArgs@)", asFUNCTIONPR(Creature_CastSpell, (Creature*, CastSpellTargetArg const&, uint32, CastSpellExtraArgs const&), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpellSelf(uint32)", asFUNCTIONPR(Creature_CastSpellSelf, (Creature*, uint32), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Creature", "void CastSpellSelf(uint32, bool)", asFUNCTIONPR(Creature_CastSpellSelf, (Creature*, uint32, bool), void), asCALL_CDECL_OBJFIRST);
 
         // React state
         r = _scriptEngine->RegisterObjectMethod("Creature", "uint8 GetReactState() const", asFUNCTION(Creature_GetReactState), asCALL_CDECL_OBJFIRST);

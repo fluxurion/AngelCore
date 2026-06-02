@@ -91,6 +91,9 @@ namespace AngelScript
     // ---- NEW: Missing critical API wrappers ----
     static uint32 Player_GetTeam(Player* p) { return p ? static_cast<uint32>(p->GetTeam()) : 0; }
     static void Player_CastSpell(Player* p, Unit* target, uint32 spellId) { if (p && target) p->CastSpell(target, spellId, true); }
+    static void Player_CastSpell(Player* p, Unit* target, uint32 spellId, bool triggered) { if (p && target) p->CastSpell(target, spellId, triggered); }
+    static void Player_CastSpell(Player* p, Unit* target, uint32 spellId, CastSpellExtraArgs const& args) { if (p && target) p->CastSpell(target, spellId, args); }
+    static void Player_CastSpell(Player* p, CastSpellTargetArg const& targetArg, uint32 spellId, CastSpellExtraArgs const& args) { if (p) p->CastSpell(targetArg, spellId, args); }
     static bool Player_LearnSpell(Player* p, uint32 spellId) { if (!p) return false; p->LearnSpell(spellId, false); return true; }
     static bool Player_HasSpell(Player* p, uint32 spellId) { return p ? p->HasSpell(spellId) : false; }
     static uint32 Player_GetFreeInventorySlotCount(Player* p) { return p ? p->GetFreeInventorySlotCount() : 0; }
@@ -133,6 +136,7 @@ namespace AngelScript
     }
 
     static void Player_CastSpellSelf(Player* p, uint32 spellId) { if (p) p->CastSpell(p, spellId, true); }
+    static void Player_CastSpellSelf(Player* p, uint32 spellId, bool triggered) { if (p) p->CastSpell(p, spellId, triggered); }
     static void Player_AddAura(Player* p, uint32 spellId, Unit* caster) { if (p && caster) p->AddAura(spellId, caster); }
     static void Player_RemoveAura(Player* p, uint32 spellId) { if (p) p->RemoveAura(spellId); }
     static void Player_GiveXP(Player* p, uint32 amount, Unit* victim) { if (p) p->GiveXP(amount, victim); }
@@ -256,8 +260,12 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Player", "void AddAura(uint32, Unit@)", asFUNCTION(Player_AddAura), asCALL_CDECL_OBJFIRST);
 
         // Spells
-        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpell(Unit@, uint32)", asFUNCTION(Player_CastSpell), asCALL_CDECL_OBJFIRST);
-        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpellSelf(uint32)", asFUNCTION(Player_CastSpellSelf), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpell(Unit@, uint32)", asFUNCTIONPR(Player_CastSpell, (Player*, Unit*, uint32), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpell(Unit@, uint32, bool)", asFUNCTIONPR(Player_CastSpell, (Player*, Unit*, uint32, bool), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpell(Unit@, uint32, CastSpellExtraArgs@)", asFUNCTIONPR(Player_CastSpell, (Player*, Unit*, uint32, CastSpellExtraArgs const&), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpell(CastSpellTargetArg@, uint32, CastSpellExtraArgs@)", asFUNCTIONPR(Player_CastSpell, (Player*, CastSpellTargetArg const&, uint32, CastSpellExtraArgs const&), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpellSelf(uint32)", asFUNCTIONPR(Player_CastSpellSelf, (Player*, uint32), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void CastSpellSelf(uint32, bool)", asFUNCTIONPR(Player_CastSpellSelf, (Player*, uint32, bool), void), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "bool LearnSpell(uint32)", asFUNCTION(Player_LearnSpell), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "bool HasSpell(uint32) const", asFUNCTION(Player_HasSpell), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "uint32 GetFreeInventorySlotCount() const", asFUNCTION(Player_GetFreeInventorySlotCount), asCALL_CDECL_OBJFIRST);

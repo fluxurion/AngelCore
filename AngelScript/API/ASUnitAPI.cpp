@@ -82,7 +82,11 @@ namespace AngelScript
 
     // ---- NEW: Missing critical API wrappers ----
     static void Unit_CastSpell(Unit* u, Unit* target, uint32 spellId) { if (u && target) u->CastSpell(target, spellId, true); }
+    static void Unit_CastSpell(Unit* u, Unit* target, uint32 spellId, bool triggered) { if (u && target) u->CastSpell(target, spellId, triggered); }
+    static void Unit_CastSpell(Unit* u, Unit* target, uint32 spellId, CastSpellExtraArgs const& args) { if (u && target) u->CastSpell(target, spellId, args); }
+    static void Unit_CastSpell(Unit* u, CastSpellTargetArg const& targetArg, uint32 spellId, CastSpellExtraArgs const& args) { if (u) u->CastSpell(targetArg, spellId, args); }
     static void Unit_CastSpellSelf(Unit* u, uint32 spellId) { if (u) u->CastSpell(u, spellId, true); }
+    static void Unit_CastSpellSelf(Unit* u, uint32 spellId, bool triggered) { if (u) u->CastSpell(u, spellId, triggered); }
     static void Unit_AddAura(Unit* u, uint32 spellId, Unit* caster) { if (u && caster) u->AddAura(spellId, caster); }
     static void Unit_Attack(Unit* u, Unit* target, bool melee) { if (u && target) u->Attack(target, melee); }
     static void Unit_AttackStop(Unit* u) { if (u) u->AttackStop(); }
@@ -167,8 +171,12 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Unit", "void AddAura(uint32, Unit@)", asFUNCTION(Unit_AddAura), asCALL_CDECL_OBJFIRST);
 
         // Spells
-        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpell(Unit@, uint32)", asFUNCTION(Unit_CastSpell), asCALL_CDECL_OBJFIRST);
-        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpellSelf(uint32)", asFUNCTION(Unit_CastSpellSelf), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpell(Unit@, uint32)", asFUNCTIONPR(Unit_CastSpell, (Unit*, Unit*, uint32), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpell(Unit@, uint32, bool)", asFUNCTIONPR(Unit_CastSpell, (Unit*, Unit*, uint32, bool), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpell(Unit@, uint32, CastSpellExtraArgs@)", asFUNCTIONPR(Unit_CastSpell, (Unit*, Unit*, uint32, CastSpellExtraArgs const&), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpell(CastSpellTargetArg@, uint32, CastSpellExtraArgs@)", asFUNCTIONPR(Unit_CastSpell, (Unit*, CastSpellTargetArg const&, uint32, CastSpellExtraArgs const&), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpellSelf(uint32)", asFUNCTIONPR(Unit_CastSpellSelf, (Unit*, uint32), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Unit", "void CastSpellSelf(uint32, bool)", asFUNCTIONPR(Unit_CastSpellSelf, (Unit*, uint32, bool), void), asCALL_CDECL_OBJFIRST);
 
         // Combat
         r = _scriptEngine->RegisterObjectMethod("Unit", "void Attack(Unit@, bool)", asFUNCTION(Unit_Attack), asCALL_CDECL_OBJFIRST);
