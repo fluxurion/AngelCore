@@ -289,6 +289,10 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
     if (enumResult.IsDeletedCharacters())
         return;
 
+    // Retail packet: no ClassDisableMask, IsNewPlayer = true
+    enumResult.ClearClassDisableMask();
+    enumResult.SetNewPlayer(true);
+
     uint32 accountId = session.GetAccountId();
 
     EnsureFavoritesGroup(accountId);

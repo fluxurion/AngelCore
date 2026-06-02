@@ -236,6 +236,12 @@ namespace AngelScript
         result->ClassDisableMask = {};
     }
 
+    static void EnumResult_SetNewPlayer(WorldPackets::Character::EnumCharactersResult* result, bool value)
+    {
+        if (!result) return;
+        result->IsRestrictedNewPlayer = value;
+    }
+
     static void EnumResult_ClearWarbandGroups(WorldPackets::Character::EnumCharactersResult* result)
     {
         if (!result) return;
@@ -413,6 +419,7 @@ namespace AngelScript
         // Warband group methods
         engine->RegisterObjectMethod("EnumCharactersResult", "bool IsDeletedCharacters()", asFUNCTION(EnumResult_IsDeletedCharacters), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearClassDisableMask()", asFUNCTION(EnumResult_ClearClassDisableMask), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void SetNewPlayer(bool value)", asFUNCTION(EnumResult_SetNewPlayer), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearWarbandGroups()", asFUNCTION(EnumResult_ClearWarbandGroups), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetWarbandGroupCount()", asFUNCTION(EnumResult_GetWarbandGroupCount), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroup(uint64 groupId, uint8 orderIndex, uint32 warbandSceneId, uint32 flags, int32 contentSetID, const string& in name)", asFUNCTION(EnumResult_AddWarbandGroup), asCALL_CDECL_OBJFIRST);
