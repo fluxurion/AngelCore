@@ -1,7 +1,7 @@
 /*
  * LoginToRPE.as
  * Handles RPE (Recruit a Friend Experience) login
- * Checks logout_time to determine RPE/catchup eligibility
+ * Checks rpe_login flag in AngelDB to determine RPE availability
  */
 
 #include "../includes/ScriptFramework.as"
@@ -25,47 +25,6 @@ const uint32 SPELL_APPLY_RPE_WALKING = 1236321;   // Apply RPE Walking (DNT) - o
 const uint32 SPELL_PLAY_CAMERA_GRAB_SCENE = 1248494; // Play Camera Grab Scene (DNT) - on scene end
 
 // ============================================================================
-// Check if character is eligible for RPE/catchup
-// ============================================================================
-bool IsRPEEligible(uint64 characterGuid)
-{
-    // Query logout_time from characters table
-    string query = "SELECT logout_time, login_time FROM characters WHERE guid = " + characterGuid;
-    QueryResult@ result = CharacterQuery(query);
-
-    if (result is null || result.GetRowCount() == 0)
-        return false;
-
-    uint64 logoutTime = result.GetUInt64(0);
-    uint64 loginTime = result.GetUInt64(1);
-
-    // Check for new character (never logged in or logout_time = 0)
-    if (logoutTime == 0)
-    {
-        Print("[RPE] Character " + characterGuid + " has no logout_time (new character)");
-        return CONFIG_RPE_ALLOW_FIRST_LOGIN;
-    }
-
-    // Calculate days since logout
-    // logout_time is Unix timestamp in seconds
-    uint64 currentTime = GetUnixTime();
-    uint64 secondsSinceLogout = currentTime - logoutTime;
-    uint64 daysSinceLogout = secondsSinceLogout / 86400;  // 86400 seconds in a day
-
-    Print("[RPE] Character " + characterGuid + " logged out " + daysSinceLogout + " days ago");
-
-    // Check if enough time has passed
-    if (daysSinceLogout >= CONFIG_RPE_REQUIRED_LOGOUT_DAYS)
-    {
-        Print("[RPE] Character " + characterGuid + " is eligible for RPE (logout " + daysSinceLogout + " days ago, required: " + CONFIG_RPE_REQUIRED_LOGOUT_DAYS + ")");
-        return true;
-    }
-
-    Print("[RPE] Character " + characterGuid + " is NOT eligible for RPE (logout " + daysSinceLogout + " days ago, required: " + CONFIG_RPE_REQUIRED_LOGOUT_DAYS + ")");
-    return false;
-}
-
-// ============================================================================
 // Handle CMSG_PLAYER_LOGIN to check RPE flag and set position
 // ============================================================================
 bool HandlePlayerLogin(WorldSession@ session, PacketData@ packet)
@@ -80,23 +39,14 @@ bool HandlePlayerLogin(WorldSession@ session, PacketData@ packet)
 
     if (rpe)
     {
-        // Check eligibility based on logout_time
-        bool eligible = IsRPEEligible(guidLow);
+        // RPE flag is true - eligibility was already checked when setting CatchUpAvailable
+        // Just teleport to RPE start zone
+        Print("[RPE] RPE enabled - setting position to RPE start zone");
+        string query = "UPDATE characters SET map = " + RPE_MAP_ID + ", position_x = " + RPE_POS_X + ", position_y = " + RPE_POS_Y + ", position_z = " + RPE_POS_Z + ", orientation = " + RPE_ORIENTATION + " WHERE guid = " + guidLow;
+        CharacterQuery(query);
 
-        if (eligible)
-        {
-            Print("[RPE] RPE enabled and eligible - setting position to RPE start zone");
-            // Set position in characters table - player will load at this location
-            string query = "UPDATE characters SET map = " + RPE_MAP_ID + ", position_x = " + RPE_POS_X + ", position_y = " + RPE_POS_Y + ", position_z = " + RPE_POS_Z + ", orientation = " + RPE_ORIENTATION + " WHERE guid = " + guidLow;
-            CharacterQuery(query);
-
-            // Store RPE flag in AngelDB for spell casting after login
-            AngelDB_Execute("INSERT INTO character_datas (guid, rpe_login) VALUES (" + guidLow + ", 1) ON DUPLICATE KEY UPDATE rpe_login = 1");
-        }
-        else
-        {
-            Print("[RPE] RPE enabled but NOT eligible - skipping RPE");
-        }
+        // Store RPE flag in AngelDB for spell casting after login
+        AngelDB_Execute("INSERT INTO character_datas (guid, rpe_login) VALUES (" + guidLow + ", 1) ON DUPLICATE KEY UPDATE rpe_login = 1");
     }
 
     // Return false to let TC handle the packet normally

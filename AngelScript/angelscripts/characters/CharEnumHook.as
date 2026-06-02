@@ -12,6 +12,46 @@
 #include "RegionwideCharacterOpcodes.as"
 #include "RegionwideCharacterPackets.as"
 
+// ============================================================================
+// Check if character is eligible for RPE/catchup
+// ============================================================================
+bool IsRPEEligible(uint64 characterGuid)
+{
+    // Query logout_time from characters table
+    string query = "SELECT logout_time FROM characters WHERE guid = " + characterGuid;
+    QueryResult@ result = CharacterQuery(query);
+
+    if (result is null || result.GetRowCount() == 0)
+        return false;
+
+    uint64 logoutTime = result.GetUInt64(0);
+
+    // Check for new character (never logged in or logout_time = 0)
+    if (logoutTime == 0)
+    {
+        Print("[CharEnumHook] Character " + characterGuid + " has no logout_time (new character)");
+        return CONFIG_RPE_ALLOW_FIRST_LOGIN;
+    }
+
+    // Calculate days since logout
+    // logout_time is Unix timestamp in seconds
+    uint64 currentTime = GetUnixTime();
+    uint64 secondsSinceLogout = currentTime - logoutTime;
+    uint64 daysSinceLogout = secondsSinceLogout / 86400;  // 86400 seconds in a day
+
+    Print("[CharEnumHook] Character " + characterGuid + " logged out " + daysSinceLogout + " days ago");
+
+    // Check if enough time has passed
+    if (daysSinceLogout >= CONFIG_RPE_REQUIRED_LOGOUT_DAYS)
+    {
+        Print("[CharEnumHook] Character " + characterGuid + " is eligible for RPE (logout " + daysSinceLogout + " days ago, required: " + CONFIG_RPE_REQUIRED_LOGOUT_DAYS + ")");
+        return true;
+    }
+
+    Print("[CharEnumHook] Character " + characterGuid + " is NOT eligible for RPE (logout " + daysSinceLogout + " days ago, required: " + CONFIG_RPE_REQUIRED_LOGOUT_DAYS + ")");
+    return false;
+}
+
 void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
 {
     if (result is null)
@@ -85,6 +125,7 @@ void OnPostCharEnum(WorldSession@ session)
 
     array<uint64> characterGuidsLow;
     array<uint64> characterGuidsHigh;
+    array<bool> catchupAvailable;
 
     // Query all character GUIDs for this account
     string query = "SELECT guid FROM characters WHERE account = " + accountId + " ORDER BY guid";
@@ -98,12 +139,29 @@ void OnPostCharEnum(WorldSession@ session)
             BuildPlayerGuid(guid, guidLow, guidHigh);
             characterGuidsLow.insertLast(guidLow);
             characterGuidsHigh.insertLast(guidHigh);
+
+            // Check RPE availability: rpe_login DB flag OR eligibility (logout time/first login)
+            AngelDBResult rpeResult = AngelDB_Query("SELECT rpe_login FROM character_datas WHERE guid = " + guid);
+            bool hasRPE = false;
+            if (rpeResult.GetRowCount() > 0 && rpeResult.NextRow())
+            {
+                uint32 rpeLogin = rpeResult.GetUInt32(0);
+                hasRPE = (rpeLogin == 1);
+            }
+
+            // If not set in DB, check eligibility based on logout time/first login
+            if (!hasRPE)
+            {
+                hasRPE = IsRPEEligible(guid);
+            }
+
+            catchupAvailable.insertLast(hasRPE);
         }
         while (result.NextRow());
     }
 
-    // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with all character GUIDs
-    SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh);
+    // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with all character GUIDs and catchup availability
+    SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh, catchupAvailable);
     Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuidsLow.length() + " characters");
 
     // Send SMSG_REGIONWIDE_CHARACTER_MAIL_DATA immediately after restrictions
@@ -126,6 +184,7 @@ void OnPostCharDelete(WorldSession@ session)
 
     array<uint64> characterGuidsLow;
     array<uint64> characterGuidsHigh;
+    array<bool> catchupAvailable;
 
     // Query all character GUIDs for this account (after deletion)
     string query = "SELECT guid FROM characters WHERE account = " + accountId + " ORDER BY guid";
@@ -139,12 +198,29 @@ void OnPostCharDelete(WorldSession@ session)
             BuildPlayerGuid(guid, guidLow, guidHigh);
             characterGuidsLow.insertLast(guidLow);
             characterGuidsHigh.insertLast(guidHigh);
+
+            // Check RPE availability: rpe_login DB flag OR eligibility (logout time/first login)
+            AngelDBResult rpeResult = AngelDB_Query("SELECT rpe_login FROM character_datas WHERE guid = " + guid);
+            bool hasRPE = false;
+            if (rpeResult.GetRowCount() > 0 && rpeResult.NextRow())
+            {
+                uint32 rpeLogin = rpeResult.GetUInt32(0);
+                hasRPE = (rpeLogin == 1);
+            }
+
+            // If not set in DB, check eligibility based on logout time/first login
+            if (!hasRPE)
+            {
+                hasRPE = IsRPEEligible(guid);
+            }
+
+            catchupAvailable.insertLast(hasRPE);
         }
         while (result.NextRow());
     }
 
-    // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with updated character GUIDs
-    SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh);
+    // Send SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA with updated character GUIDs and catchup availability
+    SendRegionwideCharacterRestrictionsData(session, characterGuidsLow, characterGuidsHigh, catchupAvailable);
     Print("[CharEnumHook] Sent SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA for " + characterGuidsLow.length() + " characters after delete");
 
     // Send SMSG_REGIONWIDE_CHARACTER_MAIL_DATA immediately after restrictions

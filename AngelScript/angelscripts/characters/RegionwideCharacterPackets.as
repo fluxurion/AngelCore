@@ -10,7 +10,7 @@
 // Structure: Count + [Flags, Guid, RestrictionID] per character
 // Flags: bit 5-7 = TopBits, bit 4 = IsRestricted, bit 3 = CatchUpAvailable
 // ============================================================================
-void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh)
+void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh, array<bool>@ catchupAvailable)
 {
     PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA);
 
@@ -24,8 +24,10 @@ void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64
         // bits 5-7 (0xE0) = TopBits (usually 0)
         // bit 4 (0x10) = IsRestricted (false = 0)
         // bit 3 (0x08) = CatchUpAvailable (true = 1, false = 0)
-        // For now, set CatchUpAvailable = true (0x08) like most entries in retail dump
-        flags = 0x08;  // CatchUpAvailable = true
+        if (i < catchupAvailable.length() && catchupAvailable[i])
+            flags = 0x08;  // CatchUpAvailable = true
+        else
+            flags = 0;     // CatchUpAvailable = false
 
         pd.WriteUInt8(flags);
         pd.WritePackedGuid(characterGuidsLow[i], characterGuidsHigh[i]);
