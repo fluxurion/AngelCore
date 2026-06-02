@@ -1,114 +1,146 @@
 /*
  * RegionwideCharacterPackets.as
- * Packet functions for regionwide character data
- * These are CHARACTER packets, not BattlePay packets
  */
 #include "RegionwideCharacterOpcodes.as"
 
-// ============================================================================
-// SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA (0x420019)
-// Structure: Count + [Flags, Guid, RestrictionID] per character
-// Flags: bit 5-7 = TopBits, bit 4 = IsRestricted, bit 3 = CatchUpAvailable
-// ============================================================================
 void SendRegionwideCharacterRestrictionsData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh, array<bool>@ catchupAvailable)
 {
     PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA);
-
     uint32 count = characterGuidsLow.length();
     pd.WriteUInt32(count);
-
     for (uint32 i = 0; i < count; i++)
     {
         uint8 flags = 0;
-        // Flags breakdown:
-        // bits 5-7 (0xE0) = TopBits (usually 0)
-        // bit 4 (0x10) = IsRestricted (false = 0)
-        // bit 3 (0x08) = CatchUpAvailable (true = 1, false = 0)
         if (i < catchupAvailable.length() && catchupAvailable[i])
-            flags = 0x08;  // CatchUpAvailable = true
-        else
-            flags = 0;     // CatchUpAvailable = false
-
+            flags = 0x08;
         pd.WriteUInt8(flags);
         pd.WritePackedGuid(characterGuidsLow[i], characterGuidsHigh[i]);
-        pd.WriteUInt32(0);  // RestrictionID = 0 (no restrictions)
+        pd.WriteUInt32(0);
     }
-
     session.SendPacket(pd);
 }
 
-// ============================================================================
-// SMSG_REGIONWIDE_CHARACTER_MAIL_DATA (0x42001A)
-// Structure: Count + [Type(byte), Guid(packed128), SenderCount, Senders[],
-//                      EntryCount, Entries[Guid, Subject]]
-// Type: upper 3 bits of first byte
-//
-// Mail checked field bitmask (from TrinityCore characters.mail):
-//   MAIL_CHECK_MASK_READ        = 1    (mail has been read)
-//   MAIL_CHECK_MASK_RETURNED    = 2    (mail was returned)
-//   MAIL_CHECK_MASK_COD_PAYMENT = 4    (COD payment taken)
-//   MAIL_CHECK_MASK_HAS_BODY    = 8    (mail has body text)
-//   MAIL_CHECK_MASK_UNK5        = 16   (unchecked / unread flag)
-//
-// To find unread mail: (checked & 16) = 16
-// To find read mail:   (checked & 1) = 1
-// ============================================================================
+void WritePackedSizes(PacketData@ pd, array<uint32>@ sizes, uint32 start, uint32 count)
+{
+    uint32 i = start;
+    uint32 remaining = count;
+
+    while (remaining > 0)
+    {
+        // Process up to 4 elements at a time
+        uint32 chunk = remaining > 4 ? 4 : remaining;
+
+        uint32 s0 = sizes[i];
+        uint32 s1 = (chunk > 1) ? sizes[i + 1] : 0;
+        uint32 s2 = (chunk > 2) ? sizes[i + 2] : 0;
+        uint32 s3 = (chunk > 3) ? sizes[i + 3] : 0;
+
+        // Build a 24-bit integer where high bits are filled first
+        uint32 acc = ((s0 & 0x3F) << 18) |
+                     ((s1 & 0x3F) << 12) |
+                     ((s2 & 0x3F) << 6)  |
+                      (s3 & 0x3F);
+
+        // Determine how many raw bytes are needed to cover the values
+        uint32 bytesToWrite = 0;
+        if (chunk == 1) bytesToWrite = 1;      // Uses 6 bits -> 1 byte
+        else if (chunk == 2) bytesToWrite = 2; // Uses 12 bits -> 2 bytes
+        else bytesToWrite = 3;                 // Uses 18 or 24 bits -> 3 bytes
+
+        // Write the bytes out Big-Endian to match parser's shifting window
+        if (bytesToWrite >= 1) pd.WriteUInt8((acc >> 16) & 0xFF);
+        if (bytesToWrite >= 2) pd.WriteUInt8((acc >> 8) & 0xFF);
+        if (bytesToWrite >= 3) pd.WriteUInt8(acc & 0xFF);
+
+        remaining -= chunk;
+        i += chunk;
+    }
+}
+
 void SendRegionwideCharacterMailData(WorldSession@ session, array<uint64>@ characterGuidsLow, array<uint64>@ characterGuidsHigh)
 {
-    PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_MAIL_DATA);
+    Print("[RegionwideMail] Querying mail table...");
+    // Join with characters table to get sender name (sender = character guid)
+    QueryResult@ result = CharacterQuery(
+        "SELECT m.id, m.receiver, c.name FROM mail m " +
+        "LEFT JOIN characters c ON m.sender = c.guid " +
+        "WHERE m.checked = 16");
 
-    uint32 count = characterGuidsLow.length();
-    pd.WriteUInt32(count);
+    array<uint64> mailReceivers;
+    array<string> mailSubjects;
 
-    for (uint32 i = 0; i < count; i++)
+    if (result !is null)
+    {
+        while (result.NextRow())
+        {
+            mailReceivers.insertLast(result.GetUInt64(1));
+            mailSubjects.insertLast(result.GetString(2));
+        }
+    }
+    Print("[RegionwideMail] Found " + mailReceivers.length() + " unread mails");
+
+    uint32 charCount = characterGuidsLow.length();
+
+    array<string> allSubjects;
+    array<uint32> allSizes;
+    array<uint32> charCounts;
+
+    for (uint32 i = 0; i < charCount; i++)
     {
         uint64 guidLow = characterGuidsLow[i];
-        uint64 guidHigh = characterGuidsHigh[i];
-
-        // Query unread mail for this character
-        // checked & 16 = 16 means mail is unchecked/unread in TrinityCore
-        string mailQuery = "SELECT id, sender, subject, checked FROM mail WHERE receiver = "
-            + guidLow + " AND (checked & 16) = 16";
-
-        QueryResult@ mailResult = CharacterQuery(mailQuery);
-
-        uint8 type = 0;  // Type in upper 3 bits (0 = normal mail data)
-        pd.WriteUInt8(type);
-        pd.WritePackedGuid(guidLow, guidHigh);
-
-        if (mailResult !is null && mailResult.GetRowCount() > 0)
+        uint32 cnt = 0;
+        for (uint32 m = 0; m < mailReceivers.length(); m++)
         {
-            // Collect unique senders to build sender list
-            // For simplicity, we count unique senders per character
-            // In TrinityCore, this is the count of unique sender GUIDs
-            uint32 senderCount = 0;
-            pd.WriteUInt32(senderCount);  // MailSenderCount
-
-            // Write unread mail entries
-            uint32 unreadCount = mailResult.GetRowCount();
-            pd.WriteUInt32(unreadCount);  // MailEntryCount
-
-            // NextRow() must be called BEFORE reading the first row
-            while (mailResult.NextRow())
+            if (mailReceivers[m] == guidLow)
             {
-                uint64 mailId = mailResult.GetUInt64(0);
-                string mailSubject = mailResult.GetString(2);
-
-                // Write mail ID as packed128 guid (low = mailId, high = 0)
-                pd.WritePackedGuid(mailId, 0);
-                // Write mail subject
-                pd.WriteString(mailSubject);
+                string subj = mailSubjects[m];
+                allSubjects.insertLast(subj);
+                allSizes.insertLast(subj.length() + 1); // Length includes null terminator
+                cnt++;
             }
-
-            Print("[RegionwideMail] Character " + guidLow + " has " + unreadCount + " unread mails");
         }
-        else
+        charCounts.insertLast(cnt);
+    }
+
+    PacketData@ pd = CreatePacketData(SMSG_REGIONWIDE_CHARACTER_MAIL_DATA);
+    pd.WriteUInt32(charCount);
+
+    uint32 subjIdx = 0;
+    for (uint32 i = 0; i < charCount; i++)
+    {
+        // Write exactly 1 byte.
+        // Example: 0x01 means Type = 1, and TypeMask (1 >> 5) = 0.
+        pd.WriteUInt8(1);
+
+        // Follow up with standard Packed Guid block
+        pd.WritePackedGuid(characterGuidsLow[i], characterGuidsHigh[i]);
+
+        pd.WriteUInt32(charCounts[i]);    // MailEntryCount
+
+        uint32 senderCount = (charCounts[i] > 0) ? 1 : 0;
+        pd.WriteUInt32(senderCount);      // MailSenderCount
+        if (senderCount > 0)
+            pd.WriteUInt32(0);            // MailSenderType
+
+        if (charCounts[i] > 0)
         {
-            // No unread mail for this character
-            pd.WriteUInt32(0);  // MailSenderCount = 0
-            pd.WriteUInt32(0);  // MailEntryCount = 0
+            // Write the layout lengths
+            WritePackedSizes(pd, allSizes, subjIdx, charCounts[i]);
+
+            // Append the explicit string data streams
+            for (uint32 j = 0; j < charCounts[i]; j++)
+            {
+                string s = allSubjects[subjIdx];
+                uint32 len = s.length();
+                for (uint32 k = 0; k < len; k++)
+                    pd.WriteUInt8(s[k]);
+
+                pd.WriteUInt8(0); // Explicitly finalize string boundary sequence
+                subjIdx++;
+            }
         }
     }
 
+    Print("[RegionwideMail] Balanced byte alignment packet sent.");
     session.SendPacket(pd);
 }
