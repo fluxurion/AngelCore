@@ -686,8 +686,8 @@ bool AngelScriptMgr::TriggerCustomHook_FeatureSystemStatus(WorldSession* session
         if (r == asEXECUTION_FINISHED)
         {
             // Script can modify params via &out references
-            commerceServerEnabled = _context->GetArgByte(2) != 0;
-            commercePricePollTimeSeconds = _context->GetArgDWord(3);
+            commerceServerEnabled = *reinterpret_cast<bool*>(_context->GetAddressOfArg(2));
+            commercePricePollTimeSeconds = *reinterpret_cast<uint32*>(_context->GetAddressOfArg(3));
         }
         if (r == asEXECUTION_EXCEPTION)
             TC_LOG_ERROR("server.angelscript", "[AS] FeatureSystemStatus EXCEPTION: {} at {}:{}",
