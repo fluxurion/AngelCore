@@ -46,11 +46,6 @@ namespace AngelScript
         return new CastSpellExtraArgs(triggered);
     }
 
-    static void CastSpellExtraArgs_Destructor(CastSpellExtraArgs* args)
-    {
-        delete args;
-    }
-
     static void CastSpellExtraArgs_AddSpellMod(CastSpellExtraArgs* args, SpellValueMod mod, int32 val)
     {
         if (args) args->AddSpellMod(mod, val);
@@ -75,11 +70,6 @@ namespace AngelScript
     static CastSpellTargetArg* CastSpellTargetArg_FactoryUnit(Unit* target)
     {
         return new CastSpellTargetArg(target);
-    }
-
-    static void CastSpellTargetArg_Destructor(CastSpellTargetArg* arg)
-    {
-        delete arg;
     }
 
     // ---- Spell wrapper functions ----
@@ -145,7 +135,6 @@ namespace AngelScript
         {
             r = _scriptEngine->RegisterObjectBehaviour("CastSpellExtraArgs", asBEHAVE_FACTORY, "CastSpellExtraArgs@ f()", asFUNCTION(CastSpellExtraArgs_Factory), asCALL_CDECL);
             r = _scriptEngine->RegisterObjectBehaviour("CastSpellExtraArgs", asBEHAVE_FACTORY, "CastSpellExtraArgs@ f(bool)", asFUNCTION(CastSpellExtraArgs_FactoryTriggered), asCALL_CDECL);
-            r = _scriptEngine->RegisterObjectBehaviour("CastSpellExtraArgs", asBEHAVE_RELEASE, "void f()", asFUNCTION(CastSpellExtraArgs_Destructor), asCALL_CDECL_OBJFIRST);
             r = _scriptEngine->RegisterObjectMethod("CastSpellExtraArgs", "void AddSpellMod(int32, int32)", asFUNCTION(CastSpellExtraArgs_AddSpellMod), asCALL_CDECL_OBJFIRST);
             r = _scriptEngine->RegisterObjectMethod("CastSpellExtraArgs", "void AddSpellModFloat(int32, float)", asFUNCTION(CastSpellExtraArgs_AddSpellModFloat), asCALL_CDECL_OBJFIRST);
             r = _scriptEngine->RegisterObjectMethod("CastSpellExtraArgs", "void SetTriggerFlags(uint32)", asFUNCTION(CastSpellExtraArgs_SetTriggerFlags), asCALL_CDECL_OBJFIRST);
@@ -161,7 +150,6 @@ namespace AngelScript
         {
             r = _scriptEngine->RegisterObjectBehaviour("CastSpellTargetArg", asBEHAVE_FACTORY, "CastSpellTargetArg@ f()", asFUNCTION(CastSpellTargetArg_Factory), asCALL_CDECL);
             r = _scriptEngine->RegisterObjectBehaviour("CastSpellTargetArg", asBEHAVE_FACTORY, "CastSpellTargetArg@ f(Unit@)", asFUNCTION(CastSpellTargetArg_FactoryUnit), asCALL_CDECL);
-            r = _scriptEngine->RegisterObjectBehaviour("CastSpellTargetArg", asBEHAVE_RELEASE, "void f()", asFUNCTION(CastSpellTargetArg_Destructor), asCALL_CDECL_OBJFIRST);
         }
 
         // Register Spell type
