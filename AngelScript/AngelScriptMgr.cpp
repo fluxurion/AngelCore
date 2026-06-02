@@ -171,7 +171,8 @@ void AngelScriptMgr::RegisterTrinityCoreAPI()
     // Each API module also calls RegisterObjectType; asALREADY_REGISTERED is tolerated.
     for (char const* t : { "Unit", "Player", "Creature", "GameObject", "Spell", "AuraEffect",
                            "PacketData", "QueryResult", "WorldObject", "WorldSession", "EnumCharactersResult", "CharEnumCharacterInfo",
-                           "RegionwideCharacterInfo", "DB2Schema", "DB2Storage", "DB2Record" })
+                           "RegionwideCharacterInfo", "DB2Schema", "DB2Storage", "DB2Record",
+                           "CastSpellExtraArgs", "CastSpellTargetArg" })
         _scriptEngine->RegisterObjectType(t, 0, asOBJ_REF | asOBJ_NOCOUNT);
 
     // ---- Funcdefs (must come AFTER type pre-registration since they reference types) ----
