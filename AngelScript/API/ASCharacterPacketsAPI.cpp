@@ -191,6 +191,18 @@ namespace AngelScript
         info->PvpRatingAssociatedSpecID = specId;
     }
 
+    static int32 RegionwideInfo_GetProfessionId(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, uint32 index)
+    {
+        if (!info || index >= 2) return 0;
+        return info->Basic.ProfessionIds[index];
+    }
+
+    static void RegionwideInfo_SetProfessionId(WorldPackets::Character::EnumCharactersResult::RegionwideCharacterListEntry* info, uint32 index, int32 professionId)
+    {
+        if (!info || index >= 2) return;
+        info->Basic.ProfessionIds[index] = professionId;
+    }
+
     // ---- EnumCharactersResult helpers ----
     static uint32 EnumResult_GetCharacterCount(WorldPackets::Character::EnumCharactersResult* result)
     {
@@ -430,6 +442,8 @@ namespace AngelScript
         engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetPvpBracket(int8 bracket)", asFUNCTION(RegionwideInfo_SetPvpBracket), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("RegionwideCharacterInfo", "int16 GetPvpSpecId()", asFUNCTION(RegionwideInfo_GetPvpSpecId), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetPvpSpecId(int16 specId)", asFUNCTION(RegionwideInfo_SetPvpSpecId), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "int32 GetProfessionId(uint32 index)", asFUNCTION(RegionwideInfo_GetProfessionId), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("RegionwideCharacterInfo", "void SetProfessionId(uint32 index, int32 professionId)", asFUNCTION(RegionwideInfo_SetProfessionId), asCALL_CDECL_OBJFIRST);
 
         // RegionwideCharacter methods on EnumCharactersResult
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetRegionwideCharacterCount()", asFUNCTION(EnumResult_GetRegionwideCharacterCount), asCALL_CDECL_OBJFIRST);

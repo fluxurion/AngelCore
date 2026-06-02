@@ -4,13 +4,20 @@
  *
  * OnCharEnum (PRE-send):  Copies all CharacterInfoBasic data from TC's
  *                          Characters into RegionwideCharacters, clears
- *                          the Characters list, then enriches with money.
+ *                          the Characters list, then enriches with money
+ *                          and profession IDs from character_skills.
  * OnPostCharEnum (POST-send): Sends SMSG_REGIONWIDE_CHARACTER_RESTRICTIONS_DATA
  *                             after SMSG_ENUM_CHARACTERS_RESULT.
  */
 #include "../Config.as"
 #include "RegionwideCharacterOpcodes.as"
 #include "RegionwideCharacterPackets.as"
+
+// Profession SkillLine IDs (retail 11.x) — matched against character_skills
+// to populate ProfessionIds[2] on RegionwideCharacter entries.
+const uint32 PROFESSION_SKILL_IDS[] = {
+    202, 773, 333, 755, 164, 171, 165, 197, 186, 182, 393
+};
 
 // ============================================================================
 // Check if character is eligible for RPE/catchup
@@ -83,7 +90,7 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
     // Clear the basic Characters list — we send RegionwideCharacters instead
     result.ClearCharacters();
 
-    // Enrich RegionwideCharacters with money from the database
+    // Enrich RegionwideCharacters with money and profession IDs
     uint32 regionCount = result.GetRegionwideCharacterCount();
     for (uint32 i = 0; i < regionCount; i++)
     {
@@ -103,8 +110,27 @@ void OnCharEnum(WorldSession@ session, EnumCharactersResult@ result)
         }
         regionChar.SetMoney(money);
 
-        // TODO: Query average item level
-        // regionChar.SetAvgItemLevel(avgIlvlFromDB);
+        // Query profession IDs from character_skills
+        string skillsQuery = "SELECT skill FROM character_skills WHERE guid = " + guid;
+        QueryResult@ skillsResult = CharacterQuery(skillsQuery);
+        if (skillsResult !is null && skillsResult.GetRowCount() > 0)
+        {
+            uint32 profSlot = 0;
+            do
+            {
+                uint32 skillId = skillsResult.GetUInt32(0);
+                for (uint32 pi = 0; pi < PROFESSION_SKILL_IDS.length() && profSlot < 2; pi++)
+                {
+                    if (skillId == PROFESSION_SKILL_IDS[pi])
+                    {
+                        regionChar.SetProfessionId(profSlot, int32(skillId));
+                        profSlot++;
+                        break;
+                    }
+                }
+            }
+            while (skillsResult.NextRow() && profSlot < 2);
+        }
     }
 
     Print("[CharEnumHook] Done - RegionwideCharacterCount: " + regionCount);
