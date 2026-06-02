@@ -4,11 +4,8 @@
  * AngelScript implementation of warband group saving.
  * Populates WarbandGroups with nested Members for SMSG_ENUM_CHARACTERS_RESULT.
  *
- * Note: RegionwideCharacters population (including ProfessionIds from
- * character_skills) is handled by CharEnumHook.as.
- *
- * Member SlotIndex values are client-assigned (via CMSG_SETUP_WARBAND_GROUPS).
- * The server stores and echoes them back — no hardcoded placement IDs.
+ * Note: RegionwideCharacters population (including ProfessionIds) is handled
+ * by CharEnumHook.as. This hook ONLY handles warband groups and members.
  */
 
 #include "../includes/Common.as"
@@ -18,7 +15,7 @@ const uint32 MAX_WARBAND_GROUPS        = 20;
 const uint32 MAX_WARBAND_MEMBERS       = 200;
 
 // ===================================================================================
-// WarbandGroup classes - used for CMSG_SETUP_WARBAND_GROUPS packet parsing only
+// WarbandGroup classes - for CMSG_SETUP_WARBAND_GROUPS packet parsing
 // ===================================================================================
 
 class WarbandGroupMember
@@ -88,7 +85,7 @@ void RegisterHooks()
 }
 
 // ===================================================================================
-// CMSG_SETUP_WARBAND_GROUPS handler — persists warband groups + members to DB
+// CMSG_SETUP_WARBAND_GROUPS handler
 // ===================================================================================
 
 bool HandleSetupWarbandGroups(WorldSession@ session, PacketData@ packet)
@@ -125,10 +122,8 @@ bool HandleSetupWarbandGroups(WorldSession@ session, PacketData@ packet)
     if (!payloadValid)
         return true;
 
-    // --- Database Persistence ---
     string accountStr = "" + accountId;
 
-    // Snapshot existing name -> groupId mapping BEFORE deleting
     array<string>  existingNames;
     array<uint32>  existingSceneIds;
     array<uint64>  existingGroupIds;
@@ -215,7 +210,7 @@ bool HandleSetupWarbandGroups(WorldSession@ session, PacketData@ packet)
 }
 
 // ===================================================================================
-// EnsureFavoritesGroup — auto-create the default Favorites warband group
+// EnsureFavoritesGroup — create default Favorites group with members if missing
 // ===================================================================================
 
 const uint32 FAVORITES_WARBAND_SCENE_ID = 29;
@@ -225,17 +220,17 @@ const uint32 FAVORITES_MAX_MEMBERS      = 4;
 void EnsureFavoritesGroup(uint32 accountId)
 {
     string accountStr = "" + accountId;
-
     uint64 groupId = (uint64(accountId) << 20) | uint64(0xFAB0);
 
-    AngelDBResult idCheck = AngelDB_Query(
-        "SELECT 1 FROM `warband_groups` WHERE `accountId` = " + accountStr +
-        " AND `groupId` = " + groupId + " LIMIT 1"
+    // If group already has members, nothing to do
+    AngelDBResult check = AngelDB_Query(
+        "SELECT 1 FROM `warband_group_members` "
+        "WHERE `accountId` = " + accountStr + " AND `groupId` = " + groupId + " LIMIT 1"
     );
-    if (idCheck.GetRowCount() > 0)
+    if (check.GetRowCount() > 0)
         return;
 
-    // Clean any orphaned rows from a previous run
+    // Clean orphaned rows
     AngelDB_Execute(
         "DELETE FROM `warband_groups` WHERE `accountId` = " + accountStr +
         " AND `name` = '" + FAVORITES_GROUP_NAME + "' AND `groupId` != " + groupId
@@ -245,7 +240,7 @@ void EnsureFavoritesGroup(uint32 accountId)
         " AND `groupId` NOT IN (SELECT `groupId` FROM `warband_groups` WHERE `accountId` = " + accountStr + ")"
     );
 
-    // Fetch top characters for this account
+    // Fetch top characters
     QueryResult@ charsResult = CharacterQuery(
         "SELECT `guid` FROM `characters` WHERE `account` = " + accountStr +
         " AND `deleteDate` IS NULL ORDER BY `totaltime` DESC LIMIT " + FAVORITES_MAX_MEMBERS
@@ -253,37 +248,37 @@ void EnsureFavoritesGroup(uint32 accountId)
     if (charsResult is null)
         return;
 
-    // Insert the Favorites group row
-    bool groupInserted = AngelDB_Execute(
-        "INSERT IGNORE INTO `warband_groups` (`accountId`,`groupId`,`orderIndex`,`warbandSceneId`,`flags`,`name`) VALUES (" +
-        accountStr + "," + groupId + ",0," + FAVORITES_WARBAND_SCENE_ID + ",0,'" + FAVORITES_GROUP_NAME + "')"
+    // Upsert the Favorites group row
+    AngelDB_Execute(
+        "INSERT INTO `warband_groups` (`accountId`,`groupId`,`orderIndex`,`warbandSceneId`,`flags`,`name`) VALUES (" +
+        accountStr + "," + groupId + ",0," + FAVORITES_WARBAND_SCENE_ID + ",0,'" + FAVORITES_GROUP_NAME + "') "
+        "ON DUPLICATE KEY UPDATE `orderIndex` = 0"
     );
-    if (!groupInserted)
-        PrintError("[Warband] INSERT warband_groups FAILED account=" + accountId + " groupId=" + groupId + " err=" + AngelDB_GetLastError());
 
-    // Insert members at the default SlotIndex. The client will overwrite these
-    // with the correct WarbandScenePlacement IDs on its next CMSG_SETUP_WARBAND_GROUPS.
+    // Insert default members.
+    // IMPORTANT: store the LOW part of the GUID (matching what CMSG_SETUP_WARBAND_GROUPS
+    // stores from ReadPackedGuid). The C++ API AddWarbandGroupMember feeds this
+    // directly to ObjectGuid::Create<HighGuid::Player>(guidLow).
     uint32 slot = 0;
     do
     {
-        uint64 charGuid = charsResult.GetUInt64(0);
+        uint64 fullGuid = charsResult.GetUInt64(0);
+        uint64 guidLow, guidHigh;
+        BuildPlayerGuid(fullGuid, guidLow, guidHigh);
         AngelDB_Execute(
             "INSERT IGNORE INTO `warband_group_members` (`accountId`,`groupId`,`characterGuid`,`warbandScenePlacementId`,`type`) VALUES (" +
-            accountStr + "," + groupId + "," + charGuid + "," + slot + ",0)"
+            accountStr + "," + groupId + "," + guidLow + "," + slot + ",0)"
         );
         slot++;
     } while (charsResult.NextRow() && slot < FAVORITES_MAX_MEMBERS);
 }
 
 // ===================================================================================
-// OnWarbandGroupsCharEnum — AngelScript hook for SMSG_ENUM_CHARACTERS_RESULT
+// OnWarbandGroupsCharEnum — populates WarbandGroups with nested Members
 //
-// Populates WarbandGroups with nested Members. The SlotIndex entries are
-// client-assigned (via CMSG_SETUP_WARBAND_GROUPS) and echoed back as-is.
-// If DB members are missing, a fallback fills the group with the account's
-// characters so the client always has placements enabling drag-and-drop.
-//
-// Note: RegionwideCharacters and ProfessionIds are handled by CharEnumHook.as.
+// Members come from the DB (populated by CMSG_SETUP_WARBAND_GROUPS or
+// EnsureFavoritesGroup). If the DB is empty, a fallback fills the group
+// using the realm Characters list so the client always has placements.
 // ===================================================================================
 
 void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumResult)
@@ -296,10 +291,8 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
 
     uint32 accountId = session.GetAccountId();
 
-    // --- Step 1: Ensure the default Favorites warband group exists in DB ---
     EnsureFavoritesGroup(accountId);
 
-    // --- Step 2: Load all warband groups from DB ---
     enumResult.ClearWarbandGroups();
 
     AngelDBResult groupsResult = AngelDB_Query(
@@ -310,8 +303,16 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
     if (groupsResult.GetRowCount() == 0)
         return;
 
-    // --- Step 3: Build each group with its nested Members ---
-    uint32 regionCount = enumResult.GetRegionwideCharacterCount();
+    // Snapshot character GUIDs from the realm Characters list (always populated
+    // by C++ HandleCharEnum before any hooks fire).
+    array<uint64> charGuids;
+    uint32 realmCount = enumResult.GetCharacterCount();
+    for (uint32 i = 0; i < realmCount; i++)
+    {
+        CharEnumCharacterInfo@ ci = enumResult.GetCharacter(i);
+        if (ci !is null)
+            charGuids.insertLast(ci.GetGuid());
+    }
 
     while (groupsResult.NextRow())
     {
@@ -332,7 +333,7 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
         uint32 groupIndex = enumResult.GetWarbandGroupCount();
         enumResult.AddWarbandGroup(groupId, orderIndex, warbandSceneId, flags, 0, sanitizedName);
 
-        // --- Load persisted members from DB ---
+        // Load persisted members from DB
         AngelDBResult membersResult = AngelDB_Query(
             "SELECT `characterGuid`, `warbandScenePlacementId`, `type` " +
             "FROM `warband_group_members` WHERE `accountId` = " + accountId +
@@ -353,20 +354,12 @@ void OnWarbandGroupsCharEnum(WorldSession@ session, EnumCharactersResult@ enumRe
             }
         }
 
-        // --- Fallback: no persisted members — fill group with the account's characters ---
-        // Uses sequential SlotIndex so the client has character placements to render.
-        // The client will assign correct WarbandScenePlacement IDs on its next
-        // CMSG_SETUP_WARBAND_GROUPS.
-        if (loadedMemberCount == 0 && regionCount > 0)
+        // Fallback: DB empty — fill from snapshot of realm Characters
+        if (loadedMemberCount == 0 && charGuids.length() > 0)
         {
-            for (uint32 ci = 0; ci < regionCount && ci < FAVORITES_MAX_MEMBERS; ci++)
+            for (uint32 ci = 0; ci < charGuids.length() && ci < FAVORITES_MAX_MEMBERS; ci++)
             {
-                RegionwideCharacterInfo@ regionChar = enumResult.GetRegionwideCharacter(ci);
-                if (regionChar is null)
-                    continue;
-
-                uint64 guidLow = regionChar.GetGuid();
-                enumResult.AddWarbandGroupMember(groupIndex, ci, 0, 0, guidLow);
+                enumResult.AddWarbandGroupMember(groupIndex, ci, 0, 0, charGuids[ci]);
             }
         }
     }

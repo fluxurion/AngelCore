@@ -38,10 +38,6 @@
 namespace AngelScript
 {
     // Persistent storage for warband group names (WarbandGroup uses string_view)
-    // Maps EnumCharactersResult* to a deque of strings that persist until cleared.
-    // A deque is used (not vector) so element addresses remain stable across
-    // push_back — otherwise the string_view in WarbandGroup.Name would dangle
-    // after the storage reallocates when a second group is added.
     static std::unordered_map<void*, std::deque<std::string>> g_WarbandGroupNameStorage;
 
     static void StoreWarbandGroupName(WorldPackets::Character::EnumCharactersResult* result, std::string&& name)
@@ -234,6 +230,12 @@ namespace AngelScript
         return result->IsDeletedCharacters;
     }
 
+    static void EnumResult_ClearClassDisableMask(WorldPackets::Character::EnumCharactersResult* result)
+    {
+        if (!result) return;
+        result->ClassDisableMask = {};
+    }
+
     static void EnumResult_ClearWarbandGroups(WorldPackets::Character::EnumCharactersResult* result)
     {
         if (!result) return;
@@ -252,7 +254,6 @@ namespace AngelScript
     {
         if (!result) return;
 
-        // Store name in persistent storage (string_view needs stable memory)
         StoreWarbandGroupName(result, std::string(name));
 
         WorldPackets::Character::WarbandGroup group;
@@ -261,7 +262,6 @@ namespace AngelScript
         group.WarbandSceneID = warbandSceneId;
         group.Flags = flags;
         group.ContentSetID = contentSetID;
-        // Point string_view to our persistent storage
         group.Name = g_WarbandGroupNameStorage[result].back();
         result->WarbandGroups.push_back(std::move(group));
     }
@@ -327,15 +327,10 @@ namespace AngelScript
     {
         if (!result) return nullptr;
 
-        // Create new entry directly in vector (RegionwideCharacterListEntry has no default ctor)
         result->RegionwideCharacters.emplace_back();
         auto& entry = result->RegionwideCharacters.back();
 
-        // Set Basic info
         entry.Basic.Guid = ObjectGuid::Create<HighGuid::Player>(guidLow);
-        // VirtualRealmAddress must match the current realm so the client associates
-        // this regionwide entry with the realm and displays its data (money, ilvl, ...).
-        // The default-constructed entry leaves this at 0, which the client rejects.
         entry.Basic.VirtualRealmAddress = GetVirtualRealmAddress();
         entry.Basic.Name = name;
         entry.Basic.RaceID = raceID;
@@ -343,7 +338,6 @@ namespace AngelScript
         entry.Basic.SexID = sexID;
         entry.Basic.ExperienceLevel = level;
 
-        // Set Regionwide-specific data
         entry.Money = money;
         entry.AvgEquippedItemLevel = itemLevel;
 
@@ -362,11 +356,8 @@ namespace AngelScript
             result->RegionwideCharacters.emplace_back();
             auto& entry = result->RegionwideCharacters.back();
 
-            // Copy the FULL CharacterInfoBasic (includes VisualItems, Customizations,
-            // Flags, Guild info, MapID, ZoneID, PreloadPos, timestamps, etc.)
             entry.Basic = charInfo.Basic;
 
-            // Initialize regionwide-specific fields (will be updated by AngelScript)
             entry.Money = 0;
             entry.AvgEquippedItemLevel = 0.0f;
             entry.CurrentSeasonMythicPlusOverallScore = 0.0f;
@@ -421,6 +412,7 @@ namespace AngelScript
 
         // Warband group methods
         engine->RegisterObjectMethod("EnumCharactersResult", "bool IsDeletedCharacters()", asFUNCTION(EnumResult_IsDeletedCharacters), asCALL_CDECL_OBJFIRST);
+        engine->RegisterObjectMethod("EnumCharactersResult", "void ClearClassDisableMask()", asFUNCTION(EnumResult_ClearClassDisableMask), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void ClearWarbandGroups()", asFUNCTION(EnumResult_ClearWarbandGroups), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "uint32 GetWarbandGroupCount()", asFUNCTION(EnumResult_GetWarbandGroupCount), asCALL_CDECL_OBJFIRST);
         engine->RegisterObjectMethod("EnumCharactersResult", "void AddWarbandGroup(uint64 groupId, uint8 orderIndex, uint32 warbandSceneId, uint32 flags, int32 contentSetID, const string& in name)", asFUNCTION(EnumResult_AddWarbandGroup), asCALL_CDECL_OBJFIRST);
