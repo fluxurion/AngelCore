@@ -359,7 +359,7 @@ namespace AngelScript
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusGlueScreenHook(FeatureSystemStatusGlueScreenHookV2@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatusGlueScreen), asCALL_CDECL);
         // FeatureSystemStatus hook
-        r = _scriptEngine->RegisterFuncdef("bool FeatureSystemStatusHookV2(uint32, bool)");
+        r = _scriptEngine->RegisterFuncdef("void FeatureSystemStatusHookV2(uint32, bool, bool &out, uint32 &out)");
         if (r >= 0 || r == asALREADY_REGISTERED)
             r = _scriptEngine->RegisterGlobalFunction("void RegisterFeatureSystemStatusHook(FeatureSystemStatusHookV2@)", asFUNCTION(RegisterCustomHook_FeatureSystemStatus), asCALL_CDECL);
 

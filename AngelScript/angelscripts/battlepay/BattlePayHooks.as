@@ -31,9 +31,11 @@ bool OnFeatureSystemStatusGlueScreen(uint32 sessionID, bool bpayStoreAvailable, 
     return CONFIG_BPAY_STORE_ENABLED;
 }
 
-bool OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable)
+void OnFeatureSystemStatus(uint32 sessionID, bool bpayStoreAvailable, bool &out commerceServerEnabled, uint32 &out commercePricePollTimeSeconds)
 {
-    return CONFIG_BPAY_STORE_ENABLED;
+    // Private server: disable commerce server polling (no Blizzard backend)
+    commerceServerEnabled = false;
+    commercePricePollTimeSeconds = 0;
 }
 
 // ============================================================================
