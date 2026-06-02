@@ -87,6 +87,10 @@ namespace AngelScript
     static void Player_SendNotification(Player* p, const std::string& msg) { if (p && p->GetSession()) p->GetSession()->SendNotification("%s", msg.c_str()); }
     static bool Player_HasAura(Player* p, uint32 spellId) { return p ? p->HasAura(spellId) : false; }
     static bool Player_TeleportTo(Player* p, uint32 mapId, float x, float y, float z, float o) { return p ? p->TeleportTo(mapId, x, y, z, o) : false; }
+    // Relocate: changes position in-memory WITHOUT a loading screen (same map only!)
+    // For cross-map movement use TeleportTo instead.
+    static void Player_Relocate(Player* p, float x, float y, float z, float o) { if (p) p->Relocate(x, y, z, o); }
+    static void Player_Relocate(Player* p, float x, float y, float z) { if (p) p->Relocate(x, y, z); }
 
     // ---- NEW: Missing critical API wrappers ----
     static uint32 Player_GetTeam(Player* p) { return p ? static_cast<uint32>(p->GetTeam()) : 0; }
@@ -209,6 +213,8 @@ namespace AngelScript
         r = _scriptEngine->RegisterObjectMethod("Player", "float GetPositionZ() const", asFUNCTION(Player_GetPositionZ), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "float GetOrientation() const", asFUNCTION(Player_GetOrientation), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "bool TeleportTo(uint32, float, float, float, float)", asFUNCTION(Player_TeleportTo), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void Relocate(float, float, float, float)", asFUNCTIONPR(Player_Relocate, (Player*, float, float, float, float), void), asCALL_CDECL_OBJFIRST);
+        r = _scriptEngine->RegisterObjectMethod("Player", "void Relocate(float, float, float)", asFUNCTIONPR(Player_Relocate, (Player*, float, float, float), void), asCALL_CDECL_OBJFIRST);
         r = _scriptEngine->RegisterObjectMethod("Player", "void UpdateZone(uint32, uint32)", asFUNCTION(Player_UpdateZone), asCALL_CDECL_OBJFIRST);
 
         // Health
