@@ -1,15 +1,11 @@
 /*
  * AngelScript Spawn API
  * Complete spawn system for creatures & gameobjects from AngelScript.
- * Bypasses TC's SQL spawn tables entirely — all spawn data lives in .as files.
+ * AngelDB persistence ensures spawns survive server restarts.
  *
- * Features:
- *   - Spawn/despawn creatures & gameobjects with position, orientation, phaseId
- *   - Per-spawn: level, faction, displayId, equipment, gossip, NPC flags
- *   - Movement: MovePoint, MovePath (waypoints), MoveRandom (wander), MoveFollow
- *   - Quest scripting: Talk, Say, Yell, Emote, CastSpell, Despawn, MoveTo
- *   - Respawn management with configurable delay
- *   - Find spawned objects by GUID
+ * GUID separation:
+ *   TC spawns     : 0x0000000001 .. 0x0000007FFFFFFFFF  (bit 39 clear)
+ *   AngelCore     : 0x0000008000000001 .. 0x000000FFFFFFFFFF  (bit 39 set)
  */
 
 #ifndef ANGELSCRIPT_INTEGRATION
@@ -37,6 +33,8 @@
 #pragma pop_macro("IN")
 
 #include "ASSpawnAPI.h"
+#include "ASSpawnDB.h"
+#include "ASAngelDB.h"
 #include "AngelScriptMgr.h"
 #include "Creature.h"
 #include "CreatureAI.h"
@@ -57,31 +55,50 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 namespace AngelScript
 {
     // ========================================================================
-    // Spawn Registry — tracks AS-spawned objects
+    // Spawn Registry — tracks AS-spawned objects (in-memory + AngelDB)
     // ========================================================================
 
     struct ASCreatureSpawnEntry
     {
         ObjectGuid guid;
+        ObjectGuid::LowType spawnId = 0;   // our AS-specific spawn ID (bit 39 set)
         uint32 entry;
         uint32 mapId;
         float x, y, z, o;
         uint32 respawnDelaySecs;
         bool isActive;
+
+        // Extended config (from SpawnCreatureEx)
+        uint8  level = 0;
+        uint32 faction = 0;
+        uint64 npcFlags = 0;
+        uint32 gossipMenuId = 0;
+        uint8  equipmentId = 0;
+        uint8  reactState = 0;
+        uint32 phaseId = 0;
+
+        bool isPersisted = false;  // true = stored in AngelDB
     };
 
     struct ASGameObjectSpawnEntry
     {
         ObjectGuid guid;
+        ObjectGuid::LowType spawnId = 0;
         uint32 entry;
         uint32 mapId;
         float x, y, z, o;
+        float rot0 = 0, rot1 = 0, rot2 = 0, rot3 = 1;
         uint32 respawnDelaySecs;
         bool isActive;
+        uint32 phaseId = 0;
+        uint8  goState = 1;
+
+        bool isPersisted = false;
     };
 
     static std::vector<ASCreatureSpawnEntry>   g_asCreatureSpawns;
@@ -101,11 +118,16 @@ namespace AngelScript
         if (!c) return s_empty;
         return g_asCreatureTimers[c->GetGUID().GetRawValue(0)];
     }
-    static void RegisterSpawnedCreature(Creature* c, uint32 respawnDelaySecs)
+
+    static void RegisterSpawnedCreature(Creature* c, uint32 respawnDelaySecs,
+        ObjectGuid::LowType spawnId, bool persisted, uint8 level, uint32 faction,
+        uint64 npcFlags, uint32 gossipMenuId, uint8 equipmentId, uint8 reactState,
+        uint32 phaseId)
     {
         if (!c) return;
         ASCreatureSpawnEntry e;
         e.guid       = c->GetGUID();
+        e.spawnId    = spawnId;
         e.entry      = c->GetEntry();
         e.mapId      = c->GetMapId();
         e.x          = c->GetPositionX();
@@ -114,14 +136,24 @@ namespace AngelScript
         e.o          = c->GetOrientation();
         e.respawnDelaySecs = respawnDelaySecs;
         e.isActive   = true;
+        e.isPersisted= persisted;
+        e.level      = level;
+        e.faction    = faction;
+        e.npcFlags   = npcFlags;
+        e.gossipMenuId = gossipMenuId;
+        e.equipmentId  = equipmentId;
+        e.reactState   = reactState;
+        e.phaseId      = phaseId;
         g_asCreatureSpawns.push_back(e);
     }
 
-    static void RegisterSpawnedGameObject(GameObject* go, uint32 respawnDelaySecs)
+    static void RegisterSpawnedGameObject(GameObject* go, uint32 respawnDelaySecs,
+        ObjectGuid::LowType spawnId, bool persisted, uint32 phaseId, uint8 goState)
     {
         if (!go) return;
         ASGameObjectSpawnEntry e;
         e.guid       = go->GetGUID();
+        e.spawnId    = spawnId;
         e.entry      = go->GetEntry();
         e.mapId      = go->GetMapId();
         e.x          = go->GetPositionX();
@@ -130,6 +162,9 @@ namespace AngelScript
         e.o          = go->GetOrientation();
         e.respawnDelaySecs = respawnDelaySecs;
         e.isActive   = true;
+        e.isPersisted= persisted;
+        e.phaseId    = phaseId;
+        e.goState    = goState;
         g_asGameObjectSpawns.push_back(e);
     }
 
@@ -147,55 +182,13 @@ namespace AngelScript
         return nullptr;
     }
 
-    // Internal: respawn a creature from stored entry data
-    static uint64 RespawnCreatureFromEntry(ASCreatureSpawnEntry& entry)
-    {
-        Map* map = sMapMgr->FindMap(entry.mapId, 0);
-        if (!map) return 0;
-
-        Position pos(entry.x, entry.y, entry.z, entry.o);
-        Creature* creature = Creature::CreateCreature(entry.entry, map, pos);
-        if (!creature) return 0;
-
-        creature->SetRespawnCompatibilityMode(true);
-        if (!map->AddToMap(creature))
-        {
-            delete creature;
-            return 0;
-        }
-        entry.guid = creature->GetGUID();
-        entry.isActive = true;
-        return creature->GetGUID().GetRawValue(0);
-    }
-
-    // Internal: respawn a gameobject from stored entry data
-    static uint64 RespawnGameObjectFromEntry(ASGameObjectSpawnEntry& entry)
-    {
-        Map* map = sMapMgr->FindMap(entry.mapId, 0);
-        if (!map) return 0;
-
-        Position pos(entry.x, entry.y, entry.z, entry.o);
-        QuaternionData rot = QuaternionData::fromEulerAnglesZYX(entry.o, 0.0f, 0.0f);
-        GameObject* go = GameObject::CreateGameObject(entry.entry, map, pos, rot, 255, GO_STATE_READY);
-        if (!go) return 0;
-
-        if (!map->AddToMap(go))
-        {
-            delete go;
-            return 0;
-        }
-        entry.guid = go->GetGUID();
-        entry.isActive = true;
-        return go->GetGUID().GetRawValue(0);
-    }
-
     // ========================================================================
-    // SPAWN: CreateCreature
+    // SPAWN: CreateCreature  (with optional AngelDB persistence)
     // ========================================================================
     static uint64 Spawn_CreateCreature(
         uint32 entry, uint32 mapId,
         float x, float y, float z, float o,
-        uint32 phaseId, uint32 respawnDelaySecs)
+        uint32 phaseId, uint32 respawnDelaySecs, bool persist)
     {
         Map* map = sMapMgr->FindMap(mapId, 0);
         if (!map)
@@ -211,15 +204,24 @@ namespace AngelScript
             return 0;
         }
 
+        // Generate our AS-specific spawn ID
+        ObjectGuid::LowType spawnId = ASSpawnDB::GenerateCreatureSpawnId();
+        if (spawnId == 0)
+            return 0;
+
         Position pos(x, y, z, o);
-        Creature* creature = Creature::CreateCreature(entry, map, pos);
-        if (!creature)
+
+        // Create creature with our GUID (bypasses TC's GenerateLowGuid)
+        ObjectGuid guid = ObjectGuid::Create<HighGuid::Creature>(static_cast<uint16>(mapId), entry, spawnId);
+        Creature* creature = new Creature();
+        if (!creature->Create(spawnId, map, entry, pos, nullptr, 0))
         {
+            delete creature;
             TC_LOG_ERROR("server.angelscript", "[SpawnAPI] Failed to create creature entry {}", entry);
             return 0;
         }
 
-        // Apply phase (phaseId == 0 means visible in all phases)
+        // Apply phase
         if (phaseId != 0)
             PhasingHandler::AddPhase(creature, phaseId, true);
 
@@ -232,21 +234,40 @@ namespace AngelScript
             return 0;
         }
 
-        RegisterSpawnedCreature(creature, respawnDelaySecs);
+        // Register in-memory
+        RegisterSpawnedCreature(creature, respawnDelaySecs, spawnId, persist,
+            0, 0, 0, 0, 0, 0, phaseId);
 
-        TC_LOG_DEBUG("server.angelscript", "[SpawnAPI] Spawned creature entry {} guid {} at ({:.1f},{:.1f},{:.1f}) map {} phaseId {}",
-            entry, creature->GetGUID().GetCounter(), x, y, z, mapId, phaseId);
+        // Persist to AngelDB
+        if (persist && ASAngelDB::Instance().IsConnected())
+        {
+            ASPersistCreatureSpawn dbEntry;
+            dbEntry.spawnId     = spawnId;
+            dbEntry.entry       = entry;
+            dbEntry.mapId       = mapId;
+            dbEntry.x           = x;
+            dbEntry.y           = y;
+            dbEntry.z           = z;
+            dbEntry.o           = o;
+            dbEntry.phaseId     = phaseId;
+            dbEntry.respawnDelaySecs = respawnDelaySecs;
+            dbEntry.isActive    = true;
+            ASSpawnDB::InsertCreatureSpawn(dbEntry);
+        }
 
-        return creature->GetGUID().GetRawValue(0);
+        TC_LOG_DEBUG("server.angelscript", "[SpawnAPI] Spawned creature entry {} spawnId {} at ({:.1f},{:.1f},{:.1f}) map {} phaseId {}",
+            entry, spawnId, x, y, z, mapId, phaseId);
+
+        return spawnId;
     }
 
     // ========================================================================
-    // SPAWN: CreateGameObject
+    // SPAWN: CreateGameObject  (with optional AngelDB persistence)
     // ========================================================================
     static uint64 Spawn_CreateGameObject(
         uint32 entry, uint32 mapId,
         float x, float y, float z, float o,
-        uint32 phaseId, uint32 respawnDelaySecs, uint32 goState)
+        uint32 phaseId, uint32 respawnDelaySecs, uint32 goState, bool persist)
     {
         Map* map = sMapMgr->FindMap(mapId, 0);
         if (!map)
@@ -261,6 +282,11 @@ namespace AngelScript
             TC_LOG_ERROR("server.angelscript", "[SpawnAPI] GameObject template entry {} does not exist", entry);
             return 0;
         }
+
+        // Generate our AS-specific spawn ID
+        ObjectGuid::LowType spawnId = ASSpawnDB::GenerateGameObjectSpawnId();
+        if (spawnId == 0)
+            return 0;
 
         Position pos(x, y, z, o);
         QuaternionData rot = QuaternionData::fromEulerAnglesZYX(o, 0.0f, 0.0f);
@@ -283,12 +309,32 @@ namespace AngelScript
             return 0;
         }
 
-        RegisterSpawnedGameObject(go, respawnDelaySecs);
+        // Register in-memory
+        RegisterSpawnedGameObject(go, respawnDelaySecs, spawnId, persist, phaseId,
+            static_cast<uint8>(goState));
 
-        TC_LOG_DEBUG("server.angelscript", "[SpawnAPI] Spawned GO entry {} guid {} at ({:.1f},{:.1f},{:.1f}) map {} phaseId {}",
-            entry, go->GetGUID().GetCounter(), x, y, z, mapId, phaseId);
+        // Persist to AngelDB
+        if (persist && ASAngelDB::Instance().IsConnected())
+        {
+            ASPersistGameObjectSpawn dbEntry;
+            dbEntry.spawnId     = spawnId;
+            dbEntry.entry       = entry;
+            dbEntry.mapId       = mapId;
+            dbEntry.x           = x;
+            dbEntry.y           = y;
+            dbEntry.z           = z;
+            dbEntry.o           = o;
+            dbEntry.phaseId     = phaseId;
+            dbEntry.respawnDelaySecs = respawnDelaySecs;
+            dbEntry.goState     = static_cast<uint8>(goState);
+            dbEntry.isActive    = true;
+            ASSpawnDB::InsertGameObjectSpawn(dbEntry);
+        }
 
-        return go->GetGUID().GetRawValue(0);
+        TC_LOG_DEBUG("server.angelscript", "[SpawnAPI] Spawned GO entry {} spawnId {} at ({:.1f},{:.1f},{:.1f}) map {} phaseId {}",
+            entry, spawnId, x, y, z, mapId, phaseId);
+
+        return spawnId;
     }
 
     // ========================================================================
@@ -303,6 +349,9 @@ namespace AngelScript
         {
             entry->respawnDelaySecs = respawnDelaySecs;
             entry->isActive = false;
+            // Mark inactive in AngelDB
+            if (entry->isPersisted)
+                ASSpawnDB::MarkCreatureInactive(entry->spawnId);
         }
         creature->DespawnOrUnsummon(0s, Seconds(respawnDelaySecs));
     }
@@ -316,6 +365,8 @@ namespace AngelScript
         {
             entry->respawnDelaySecs = respawnDelaySecs;
             entry->isActive = false;
+            if (entry->isPersisted)
+                ASSpawnDB::MarkGameObjectInactive(entry->spawnId);
         }
         go->Delete();
         if (respawnDelaySecs > 0)
@@ -323,30 +374,28 @@ namespace AngelScript
     }
 
     // ========================================================================
-    // FIND by GUID
+    // FIND by spawnId (AS-specific)
     // ========================================================================
-    static Creature* Spawn_FindCreature(uint64 rawGuid, uint32 mapId)
+    static Creature* Spawn_FindCreature(uint64 spawnId, uint32 mapId)
     {
         Map* map = sMapMgr->FindMap(mapId, 0);
         if (!map) return nullptr;
 
-        // Search AS registry by raw GUID value
         auto it = std::find_if(g_asCreatureSpawns.begin(), g_asCreatureSpawns.end(),
-            [rawGuid](ASCreatureSpawnEntry const& e) { return e.guid.GetRawValue(0) == rawGuid; });
+            [spawnId](ASCreatureSpawnEntry const& e) { return e.spawnId == spawnId; });
         if (it != g_asCreatureSpawns.end() && it->isActive)
             return map->GetCreature(it->guid);
 
         return nullptr;
     }
 
-    static GameObject* Spawn_FindGameObject(uint64 rawGuid, uint32 mapId)
+    static GameObject* Spawn_FindGameObject(uint64 spawnId, uint32 mapId)
     {
         Map* map = sMapMgr->FindMap(mapId, 0);
         if (!map) return nullptr;
 
-        // Search AS registry by raw GUID value
         auto it = std::find_if(g_asGameObjectSpawns.begin(), g_asGameObjectSpawns.end(),
-            [rawGuid](ASGameObjectSpawnEntry const& e) { return e.guid.GetRawValue(0) == rawGuid; });
+            [spawnId](ASGameObjectSpawnEntry const& e) { return e.spawnId == spawnId; });
         if (it != g_asGameObjectSpawns.end() && it->isActive)
             return map->GetGameObject(it->guid);
 
@@ -362,7 +411,12 @@ namespace AngelScript
         auto it = std::remove_if(g_asCreatureSpawns.begin(), g_asCreatureSpawns.end(),
             [guid = creature->GetGUID()](ASCreatureSpawnEntry const& e) { return e.guid == guid; });
         if (it != g_asCreatureSpawns.end())
+        {
+            // Delete from AngelDB
+            if (it->isPersisted)
+                ASSpawnDB::DeleteCreatureSpawn(it->spawnId);
             g_asCreatureSpawns.erase(it, g_asCreatureSpawns.end());
+        }
     }
 
     static void Spawn_RemoveGORegistry(GameObject* go)
@@ -371,7 +425,11 @@ namespace AngelScript
         auto it = std::remove_if(g_asGameObjectSpawns.begin(), g_asGameObjectSpawns.end(),
             [guid = go->GetGUID()](ASGameObjectSpawnEntry const& e) { return e.guid == guid; });
         if (it != g_asGameObjectSpawns.end())
+        {
+            if (it->isPersisted)
+                ASSpawnDB::DeleteGameObjectSpawn(it->spawnId);
             g_asGameObjectSpawns.erase(it, g_asGameObjectSpawns.end());
+        }
     }
 
     // ========================================================================
@@ -383,21 +441,22 @@ namespace AngelScript
         uint32 phaseId, uint32 respawnDelaySecs,
         uint8 level, uint32 faction, uint64 npcFlags,
         uint32 gossipMenuId, uint8 equipmentId,
-        uint8 reactState)
+        uint8 reactState, bool persist)
     {
-        uint64 guid = Spawn_CreateCreature(entry, mapId, x, y, z, o, phaseId, respawnDelaySecs);
-        if (guid == 0) return 0;
+        uint64 spawnId = Spawn_CreateCreature(entry, mapId, x, y, z, o,
+            phaseId, respawnDelaySecs, persist);
+        if (spawnId == 0) return 0;
 
-        // Find the creature in the registry by raw GUID value
+        // Find the newly spawned creature
         auto it = std::find_if(g_asCreatureSpawns.begin(), g_asCreatureSpawns.end(),
-            [guid](ASCreatureSpawnEntry const& e) { return e.guid.GetRawValue(0) == guid; });
-        if (it == g_asCreatureSpawns.end()) return guid;
+            [spawnId](ASCreatureSpawnEntry const& e) { return e.spawnId == spawnId; });
+        if (it == g_asCreatureSpawns.end()) return spawnId;
 
         Map* map = sMapMgr->FindMap(mapId, 0);
-        if (!map) return guid;
+        if (!map) return spawnId;
 
         Creature* c = map->GetCreature(it->guid);
-        if (!c) return guid;
+        if (!c) return spawnId;
 
         if (level > 0)        { c->SetLevel(level, true); c->UpdateLevelDependantStats(); }
         if (faction > 0)      c->SetFaction(faction);
@@ -406,7 +465,30 @@ namespace AngelScript
         if (equipmentId != 0) { c->SetCurrentEquipmentId(equipmentId); c->LoadEquipment(equipmentId, true); }
         if (reactState < 3)   c->SetReactState(static_cast<ReactStates>(reactState));
 
-        return guid;
+        // Update the registry entry with config
+        it->level         = level;
+        it->faction       = faction;
+        it->npcFlags      = npcFlags;
+        it->gossipMenuId  = gossipMenuId;
+        it->equipmentId   = equipmentId;
+        it->reactState    = reactState;
+
+        // Update AngelDB with extended config
+        if (persist && ASAngelDB::Instance().IsConnected())
+        {
+            char sql[1024];
+            std::snprintf(sql, sizeof(sql),
+                "UPDATE `as_creature_spawns` SET "
+                "`faction`=%u,`level`=%u,`npcflag`=%llu,`gossipMenuId`=%u,"
+                "`equipment_id`=%u,`reactState`=%u "
+                "WHERE `guid`=%llu",
+                faction, level, (unsigned long long)npcFlags, gossipMenuId,
+                equipmentId, reactState,
+                (unsigned long long)spawnId);
+            ASAngelDB::Instance().Execute(sql);
+        }
+
+        return spawnId;
     }
 
     // ========================================================================
@@ -487,7 +569,7 @@ namespace AngelScript
     static void Creature_SetDisplayId(Creature* c, uint32 displayId)
     {
         if (!c) return;
-        c->SetDisplayId(displayId, true);
+        c->SetDisplayId(displayId);
     }
 
     static void GameObject_SetDisplayId(GameObject* go, uint32 displayId)
@@ -507,11 +589,11 @@ namespace AngelScript
     }
 
     // ========================================================================
-    // UTILITY: React State (passive / defensive / aggressive)
+    // UTILITY: React State
     // ========================================================================
     static void Creature_SetReactState(Creature* c, uint8 state)
     {
-        if (!c) return;
+        if (!c || state > 2) return;
         c->SetReactState(static_cast<ReactStates>(state));
     }
 
@@ -542,53 +624,51 @@ namespace AngelScript
     // ========================================================================
     // UTILITY: Talk / Say / Yell
     // ========================================================================
-    static void Creature_Talk(Creature* c, const std::string& text, uint32 msgType, uint32 language, float range, Player* target)
+    static void Creature_Talk(Creature* c, const std::string& text, uint32 msgType,
+        uint32 language, float range, Player* target)
     {
         if (!c) return;
-        WorldObject const* tgt = target ? static_cast<WorldObject const*>(target) : nullptr;
+        WorldObject* tgt = target ? static_cast<WorldObject*>(target) : nullptr;
         c->Talk(text, static_cast<ChatMsg>(msgType), static_cast<Language>(language), range, tgt);
     }
 
     static void Creature_Say(Creature* c, const std::string& text, uint32 language, Player* target)
     {
         if (!c) return;
-        WorldObject const* tgt = target ? static_cast<WorldObject const*>(target) : nullptr;
+        WorldObject* tgt = target ? static_cast<WorldObject*>(target) : nullptr;
         c->Say(text, static_cast<Language>(language), tgt);
     }
 
     static void Creature_Yell(Creature* c, const std::string& text, uint32 language, Player* target)
     {
         if (!c) return;
-        WorldObject const* tgt = target ? static_cast<WorldObject const*>(target) : nullptr;
+        WorldObject* tgt = target ? static_cast<WorldObject*>(target) : nullptr;
         c->Yell(text, static_cast<Language>(language), tgt);
     }
 
     static void Creature_TextEmote(Creature* c, const std::string& text, Player* target, bool isBossEmote)
     {
         if (!c) return;
-        WorldObject const* tgt = target ? static_cast<WorldObject const*>(target) : nullptr;
+        WorldObject* tgt = target ? static_cast<WorldObject*>(target) : nullptr;
         c->TextEmote(text, tgt, isBossEmote);
     }
 
-    // ========================================================================
-    // UTILITY: Talk by broadcast text ID
-    // ========================================================================
     static void Creature_TalkById(Creature* c, uint32 textId, uint32 msgType, float range, Player* target)
     {
         if (!c) return;
-        WorldObject const* tgt = target ? static_cast<WorldObject const*>(target) : nullptr;
+        WorldObject* tgt = target ? static_cast<WorldObject*>(target) : nullptr;
         c->Talk(textId, static_cast<ChatMsg>(msgType), range, tgt);
     }
 
     static void Creature_SayById(Creature* c, uint32 textId, Player* target)
     {
         if (!c) return;
-        WorldObject const* tgt = target ? static_cast<WorldObject const*>(target) : nullptr;
+        WorldObject* tgt = target ? static_cast<WorldObject*>(target) : nullptr;
         c->Say(textId, tgt);
     }
 
     // ========================================================================
-    // UTILITY: Play one-shot anim kit
+    // UTILITY: Anim Kit
     // ========================================================================
     static void Creature_PlayAnimKit(Creature* c, uint16 animKitId)
     {
@@ -597,66 +677,61 @@ namespace AngelScript
     }
 
     // ========================================================================
-    // MOVEMENT: MovePoint — move to a specific position
+    // UTILITY: Movement
     // ========================================================================
     static void Creature_MovePoint(Creature* c, uint32 pointId, float x, float y, float z,
         bool generatePath, float speed, bool forceWalk)
     {
         if (!c) return;
-        Optional<float> spd = (speed > 0.0f) ? Optional<float>(speed) : Optional<float>();
-        MovementWalkRunSpeedSelectionMode mode = forceWalk
-            ? MovementWalkRunSpeedSelectionMode::ForceWalk
-            : MovementWalkRunSpeedSelectionMode::Default;
-        c->GetMotionMaster()->MovePoint(pointId, x, y, z, generatePath, {}, spd, mode);
+        Movement::MoveSplineInit init(c);
+        if (generatePath)
+            init.MoveTo(x, y, z, true, forceWalk);
+        else
+            init.MoveTo(x, y, z, false, forceWalk);
+        if (speed > 0.0f)
+        {
+            MovementWalkRunSpeedSelectionMode mode = forceWalk
+                ? MovementWalkRunSpeedSelectionMode::ForceWalk
+                : MovementWalkRunSpeedSelectionMode::ForceRun;
+            init.SetSpeedMode(mode);
+            init.SetVelocity(speed);
+        }
+        init.Launch();
     }
 
-    // ========================================================================
-    // MOVEMENT: MoveRandom — wander within a distance
-    // ========================================================================
     static void Creature_MoveRandom(Creature* c, float wanderDistance)
     {
         if (!c) return;
         c->GetMotionMaster()->MoveRandom(wanderDistance);
     }
 
-    // ========================================================================
-    // MOVEMENT: MoveFollow — follow a target
-    // ========================================================================
     static void Creature_MoveFollow(Creature* c, Unit* target, float distance, float angle)
     {
         if (!c || !target) return;
         c->GetMotionMaster()->MoveFollow(target, distance, angle);
     }
 
-    // ========================================================================
-    // MOVEMENT: MoveChase — chase a target (combat)
-    // ========================================================================
     static void Creature_MoveChase(Creature* c, Unit* target, float distance, float angle)
     {
         if (!c || !target) return;
         c->GetMotionMaster()->MoveChase(target, distance, angle);
     }
 
-    // ========================================================================
-    // MOVEMENT: MoveIdle — stop all movement
-    // ========================================================================
     static void Creature_MoveIdle(Creature* c)
     {
         if (!c) return;
         c->GetMotionMaster()->MoveIdle();
     }
 
-    // ========================================================================
-    // MOVEMENT: Clear all movement
-    // ========================================================================
     static void Creature_ClearMovement(Creature* c)
     {
         if (!c) return;
         c->GetMotionMaster()->Clear();
+        c->StopMoving();
     }
 
     // ========================================================================
-    // UTILITY: Get spawn count (for diagnostics)
+    // UTILITY: Counts & Global Management
     // ========================================================================
     static uint32 Spawn_GetCreatureSpawnCount()
     {
@@ -683,6 +758,8 @@ namespace AngelScript
             {
                 c->DespawnOrUnsummon();
                 e.isActive = false;
+                if (e.isPersisted)
+                    ASSpawnDB::MarkCreatureInactive(e.spawnId);
             }
         }
         for (auto& e : g_asGameObjectSpawns)
@@ -695,32 +772,177 @@ namespace AngelScript
             {
                 go->Delete();
                 e.isActive = false;
+                if (e.isPersisted)
+                    ASSpawnDB::MarkGameObjectInactive(e.spawnId);
             }
         }
     }
 
     // ========================================================================
-    // UTILITY: Respawn ALL AS-spawned objects
+    // UTILITY: Clear all spawns (permanent removal)
     // ========================================================================
-    static void Spawn_RespawnAll()
+    static void Spawn_ClearAllSpawns()
     {
         for (auto& e : g_asCreatureSpawns)
         {
-            if (e.isActive) continue;
-            RespawnCreatureFromEntry(e);
+            if (!e.isActive) continue;
+            Map* map = sMapMgr->FindMap(e.mapId, 0);
+            if (!map) continue;
+            Creature* c = map->GetCreature(e.guid);
+            if (c)
+            {
+                c->DespawnOrUnsummon();
+                c->AddObjectToRemoveList();
+            }
+            if (e.isPersisted)
+                ASSpawnDB::DeleteCreatureSpawn(e.spawnId);
         }
         for (auto& e : g_asGameObjectSpawns)
         {
-            if (e.isActive) continue;
-            RespawnGameObjectFromEntry(e);
+            if (!e.isActive) continue;
+            Map* map = sMapMgr->FindMap(e.mapId, 0);
+            if (!map) continue;
+            GameObject* go = map->GetGameObject(e.guid);
+            if (go)
+            {
+                go->Delete();
+                go->AddObjectToRemoveList();
+            }
+            if (e.isPersisted)
+                ASSpawnDB::DeleteGameObjectSpawn(e.spawnId);
         }
+        g_asCreatureSpawns.clear();
+        g_asGameObjectSpawns.clear();
+    }
+
+    // ========================================================================
+    // Load persisted spawns from AngelDB (called on startup)
+    // ========================================================================
+    void LoadPersistedSpawns()
+    {
+        // Sync GUID counters from DB first
+        ASSpawnDB::SyncCountersFromDB();
+
+        // Load creatures
+        auto creatureSpawns = ASSpawnDB::LoadAllCreatureSpawns();
+        for (auto& dbEntry : creatureSpawns)
+        {
+            Map* map = sMapMgr->FindMap(dbEntry.mapId, 0);
+            if (!map)
+            {
+                TC_LOG_WARN("server.angelscript",
+                    "[SpawnAPI] Skipping persisted creature spawn {} entry {}: map {} not found",
+                    dbEntry.spawnId, dbEntry.entry, dbEntry.mapId);
+                continue;
+            }
+
+            CreatureTemplate const* cInfo = sObjectMgr->GetCreatureTemplate(dbEntry.entry);
+            if (!cInfo)
+            {
+                TC_LOG_WARN("server.angelscript",
+                    "[SpawnAPI] Skipping persisted creature spawn {}: entry {} does not exist",
+                    dbEntry.spawnId, dbEntry.entry);
+                continue;
+            }
+
+            Position pos(dbEntry.x, dbEntry.y, dbEntry.z, dbEntry.o);
+            Creature* creature = new Creature();
+            if (!creature->Create(dbEntry.spawnId, map, dbEntry.entry, pos, nullptr, 0))
+            {
+                delete creature;
+                TC_LOG_ERROR("server.angelscript",
+                    "[SpawnAPI] Failed to create persisted creature spawn {} entry {}",
+                    dbEntry.spawnId, dbEntry.entry);
+                continue;
+            }
+
+            if (dbEntry.phaseId != 0)
+                PhasingHandler::AddPhase(creature, dbEntry.phaseId, true);
+
+            creature->SetRespawnCompatibilityMode(true);
+
+            if (!map->AddToMap(creature))
+            {
+                delete creature;
+                TC_LOG_ERROR("server.angelscript",
+                    "[SpawnAPI] Failed to add persisted creature spawn {} to map {}",
+                    dbEntry.spawnId, dbEntry.mapId);
+                continue;
+            }
+
+            // Apply extended config
+            if (dbEntry.level > 0)        { creature->SetLevel(dbEntry.level, true); creature->UpdateLevelDependantStats(); }
+            if (dbEntry.faction > 0)      creature->SetFaction(dbEntry.faction);
+            if (dbEntry.npcflag != 0)     creature->ReplaceAllNpcFlags(NPCFlags(dbEntry.npcflag));
+            if (dbEntry.gossipMenuId > 0) creature->SetGossipMenuId(dbEntry.gossipMenuId);
+            if (dbEntry.equipment_id != 0) { creature->SetCurrentEquipmentId(dbEntry.equipment_id); creature->LoadEquipment(dbEntry.equipment_id, true); }
+            if (dbEntry.reactState < 3)   creature->SetReactState(static_cast<ReactStates>(dbEntry.reactState));
+            if (dbEntry.display_id > 0)   creature->SetDisplayId(dbEntry.display_id);
+
+            RegisterSpawnedCreature(creature, dbEntry.respawnDelaySecs, dbEntry.spawnId, true,
+                dbEntry.level, dbEntry.faction, dbEntry.npcflag,
+                dbEntry.gossipMenuId, dbEntry.equipment_id, dbEntry.reactState,
+                dbEntry.phaseId);
+        }
+
+        // Load gameobjects
+        auto goSpawns = ASSpawnDB::LoadAllGameObjectSpawns();
+        for (auto& dbEntry : goSpawns)
+        {
+            Map* map = sMapMgr->FindMap(dbEntry.mapId, 0);
+            if (!map)
+            {
+                TC_LOG_WARN("server.angelscript",
+                    "[SpawnAPI] Skipping persisted GO spawn {} entry {}: map {} not found",
+                    dbEntry.spawnId, dbEntry.entry, dbEntry.mapId);
+                continue;
+            }
+
+            GameObjectTemplate const* goInfo = sObjectMgr->GetGameObjectTemplate(dbEntry.entry);
+            if (!goInfo)
+            {
+                TC_LOG_WARN("server.angelscript",
+                    "[SpawnAPI] Skipping persisted GO spawn {}: entry {} does not exist",
+                    dbEntry.spawnId, dbEntry.entry);
+                continue;
+            }
+
+            Position pos(dbEntry.x, dbEntry.y, dbEntry.z, dbEntry.o);
+            QuaternionData rot(dbEntry.rot0, dbEntry.rot1, dbEntry.rot2, dbEntry.rot3);
+
+            GameObject* go = GameObject::CreateGameObject(dbEntry.entry, map, pos, rot, 255,
+                static_cast<GOState>(dbEntry.goState));
+            if (!go)
+            {
+                TC_LOG_ERROR("server.angelscript",
+                    "[SpawnAPI] Failed to create persisted GO spawn {} entry {}",
+                    dbEntry.spawnId, dbEntry.entry);
+                continue;
+            }
+
+            if (dbEntry.phaseId != 0)
+                PhasingHandler::AddPhase(go, dbEntry.phaseId, true);
+
+            if (!map->AddToMap(go))
+            {
+                delete go;
+                TC_LOG_ERROR("server.angelscript",
+                    "[SpawnAPI] Failed to add persisted GO spawn {} to map {}",
+                    dbEntry.spawnId, dbEntry.mapId);
+                continue;
+            }
+
+            RegisterSpawnedGameObject(go, dbEntry.respawnDelaySecs, dbEntry.spawnId, true,
+                dbEntry.phaseId, dbEntry.goState);
+        }
+
+        TC_LOG_INFO("server.angelscript",
+            "[SpawnAPI] Loaded {} creature + {} gameobject persisted spawns from AngelDB",
+            creatureSpawns.size(), goSpawns.size());
     }
 
     // ========================================================================
     // TIMER API — per-creature timed event scheduling
-    // Each spawned creature gets its own EventMap. Use Schedule/Reschedule/
-    // Cancel/Repeat to build encounter scripts. The update tick is driven by
-    // the CREATURE_ON_UPDATE hook in the Dispatch layer.
     // ========================================================================
 
     static void Creature_ScheduleEvent(Creature* c, uint32 eventId, uint32 timeMs,
@@ -846,11 +1068,6 @@ namespace AngelScript
         return !events.Empty();
     }
 
-    // ========================================================================
-    // TIMER UPDATE — called from Dispatch/ASDispatch or world update hook
-    // Advances the creature's timer and returns the next event ID if due.
-    // Returns 0 if no event is due.
-    // ========================================================================
     static uint32 Creature_UpdateTimers(Creature* c, uint32 diffMs)
     {
         if (!c) return 0;
@@ -858,39 +1075,6 @@ namespace AngelScript
         if (it == g_asCreatureTimers.end()) return 0;
         it->second.Update(diffMs);
         return it->second.ExecuteEvent();
-    }
-
-    // ========================================================================
-    // UTILITY: Clear all spawns (permanent removal)
-    // ========================================================================
-    static void Spawn_ClearAllSpawns()
-    {
-        for (auto& e : g_asCreatureSpawns)
-        {
-            if (!e.isActive) continue;
-            Map* map = sMapMgr->FindMap(e.mapId, 0);
-            if (!map) continue;
-            Creature* c = map->GetCreature(e.guid);
-            if (c)
-            {
-                c->DespawnOrUnsummon();
-                c->AddObjectToRemoveList();
-            }
-        }
-        for (auto& e : g_asGameObjectSpawns)
-        {
-            if (!e.isActive) continue;
-            Map* map = sMapMgr->FindMap(e.mapId, 0);
-            if (!map) continue;
-            GameObject* go = map->GetGameObject(e.guid);
-            if (go)
-            {
-                go->Delete();
-                go->AddObjectToRemoveList();
-            }
-        }
-        g_asCreatureSpawns.clear();
-        g_asGameObjectSpawns.clear();
     }
 
     // ========================================================================
@@ -905,7 +1089,7 @@ namespace AngelScript
 
         // ---- Spawn Creatures ----
         r = engine->RegisterGlobalFunction(
-            "uint64 SpawnCreature(uint32 entry, uint32 mapId, float x, float y, float z, float o, uint32 phaseId = 0, uint32 respawnDelaySecs = 0)",
+            "uint64 SpawnCreature(uint32 entry, uint32 mapId, float x, float y, float z, float o, uint32 phaseId = 0, uint32 respawnDelaySecs = 0, bool persist = true)",
             asFUNCTION(Spawn_CreateCreature), asCALL_CDECL);
         (void)r;
 
@@ -914,7 +1098,7 @@ namespace AngelScript
             "uint64 SpawnCreatureEx(uint32 entry, uint32 mapId, float x, float y, float z, float o, "
             "uint32 phaseId = 0, uint32 respawnDelaySecs = 0, "
             "uint8 level = 0, uint32 faction = 0, uint64 npcFlags = 0, "
-            "uint32 gossipMenuId = 0, uint8 equipmentId = 0, uint8 reactState = 0)",
+            "uint32 gossipMenuId = 0, uint8 equipmentId = 0, uint8 reactState = 0, bool persist = true)",
             asFUNCTION(Spawn_CreateCreatureEx), asCALL_CDECL);
         (void)r;
 
@@ -928,7 +1112,7 @@ namespace AngelScript
 
         // ---- Spawn GameObjects ----
         r = engine->RegisterGlobalFunction(
-            "uint64 SpawnGameObject(uint32 entry, uint32 mapId, float x, float y, float z, float o, uint32 phaseId = 0, uint32 respawnDelaySecs = 0, uint32 goState = 1)",
+            "uint64 SpawnGameObject(uint32 entry, uint32 mapId, float x, float y, float z, float o, uint32 phaseId = 0, uint32 respawnDelaySecs = 0, uint32 goState = 1, bool persist = true)",
             asFUNCTION(Spawn_CreateGameObject), asCALL_CDECL);
         (void)r;
 
@@ -942,13 +1126,13 @@ namespace AngelScript
             asFUNCTION(Spawn_DespawnGameObject), asCALL_CDECL);
         (void)r;
 
-        // ---- Find by GUID ----
+        // ---- Find by spawnId ----
         r = engine->RegisterGlobalFunction(
-            "Creature@ FindSpawnedCreature(uint64 guid, uint32 mapId)",
+            "Creature@ FindSpawnedCreature(uint64 spawnId, uint32 mapId)",
             asFUNCTION(Spawn_FindCreature), asCALL_CDECL);
         (void)r;
         r = engine->RegisterGlobalFunction(
-            "GameObject@ FindSpawnedGameObject(uint64 guid, uint32 mapId)",
+            "GameObject@ FindSpawnedGameObject(uint64 spawnId, uint32 mapId)",
             asFUNCTION(Spawn_FindGameObject), asCALL_CDECL);
         (void)r;
 
@@ -1125,15 +1309,21 @@ namespace AngelScript
         r = engine->RegisterGlobalFunction("void DespawnAll()",
             asFUNCTION(Spawn_DespawnAll), asCALL_CDECL);
         (void)r;
-        r = engine->RegisterGlobalFunction("void RespawnAll()",
-            asFUNCTION(Spawn_RespawnAll), asCALL_CDECL);
-        (void)r;
         r = engine->RegisterGlobalFunction("void ClearAllSpawns()",
             asFUNCTION(Spawn_ClearAllSpawns), asCALL_CDECL);
         (void)r;
 
-        TC_LOG_INFO("server.angelscript", "Spawn API registered (spawn, despawn, find, level, faction, flags, gossip, "
-            "displayId, equipment, react state, phase, emote, talk, movement, global management)");
+        // ---- AngelDB / Spawn utility ----
+        r = engine->RegisterGlobalFunction("bool IsAngelCoreSpawn(uint64 spawnId)",
+            asFUNCTION(ASSpawnDB::IsAngelCoreSpawn), asCALL_CDECL);
+        (void)r;
+
+        // ---- Load persisted spawns from AngelDB ----
+        LoadPersistedSpawns();
+
+        TC_LOG_INFO("server.angelscript", "[SpawnAPI] Registered (with AngelDB persistence). "
+            "Creatures: {}, GameObjects: {}",
+            Spawn_GetCreatureSpawnCount(), Spawn_GetGameObjectSpawnCount());
     }
 
 } // namespace AngelScript

@@ -2,6 +2,22 @@
 
 These scripts are for learning — they are **not loaded** by the server (the `examples/` directory is excluded from compilation). Copy the ones you want to use into the parent `angelscripts/` directory.
 
+## AngelDB Persistence (NEW)
+
+All spawn functions now auto-persist to AngelDB by default. Spawns survive server restarts!
+Use `persist = false` for temporary spawns:
+```angelscript
+SpawnCreature(entry, map, x, y, z, o, phaseId, respawn, persist = false)
+```
+
+## GUID Separation
+
+AngelCore spawns use an isolated GUID range (bit 39 set) to avoid collision with TrinityCore:
+- TC spawn GUIDs:  `0x0000000001` .. `0x0000007FFFFFFFFF`
+- AS spawn GUIDs:  `0x0000008000000001` .. `0x000000FFFFFFFFFF`
+
+Use `IsAngelCoreSpawn(spawnId)` to check if a spawn belongs to AngelCore.
+
 ## Directory Structure
 
 | Folder | Topic |
@@ -30,10 +46,16 @@ Start here and work your way up:
 
 ### Spawning
 ```angelscript
-SpawnCreature(entry, map, x, y, z, o, phaseId, respawn)                            // bare
-SpawnCreatureEx(entry, map, x, y, z, o, phase, respawn, lvl, fac, flags, goss, eq, react) // full
-SpawnGameObject(entry, map, x, y, z, o, phaseId, respawn, state)
-ConfigureCreature(creature, lvl, fac, flags, goss, eq, react)                       // batch-config
+SpawnCreature(entry, map, x, y, z, o, phaseId, respawn, persist=true)                   // bare
+SpawnCreatureEx(entry, map, x, y, z, o, phase, respawn, lvl, fac, flags, goss, eq, react, persist=true) // full
+SpawnGameObject(entry, map, x, y, z, o, phaseId, respawn, state, persist=true)
+ConfigureCreature(creature, lvl, fac, flags, goss, eq, react)                          // batch-config
+
+// Utility
+IsAngelCoreSpawn(spawnId)            // check if spawn is AngelCore-managed
+FindSpawnedCreature(spawnId, mapId)  // find by spawnId (not TC guid)
+FindSpawnedGameObject(spawnId, mapId)
+RemoveSpawnedCreature(creature)      // permanent removal (deletes from AngelDB too)
 ```
 
 ### Timers
